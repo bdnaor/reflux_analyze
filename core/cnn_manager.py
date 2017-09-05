@@ -22,7 +22,8 @@ class CNNManager(object):
         for i in models:
             cnn = CNN()
             model_path = os.path.join(ROOT_DIR, 'cnn_models', i)
-            self.models.append(cnn.load(model_path))
+            cnn.load(model_path)
+            self.models.append(cnn)
 
     def add_model(self, cnn):
         self.models.append(cnn)
@@ -39,4 +40,4 @@ class CNNManager(object):
             cnn_model = cnn
             self.models.remove(cnn)
         os.remove(cnn_model.model_path+'.h5')
-        os.remove(cnn_model.model_path + '.pkl')
+        os.remove(cnn_model.model_path + '.json')

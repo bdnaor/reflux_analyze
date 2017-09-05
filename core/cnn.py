@@ -1,15 +1,21 @@
+import json
 import os
 import numpy as np
 import pickle
 
+from random import randint
+from keras.callbacks import ModelCheckpoint, LambdaCallback
 from keras.layers import Conv2D
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+from sklearn.metrics import confusion_matrix
 from PIL import Image
 from keras.utils import np_utils
 from keras.layers.convolutional import MaxPooling2D
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.models import Sequential, load_model
+
+from manage import ROOT_DIR
 
 
 class CNN(object):
@@ -36,7 +42,7 @@ class CNN(object):
         self.input_dataset_path = 'dataset'
 
         # the data set after resize
-        self.adaptation_dtatset = self.input_dataset_path + '_adaptation'
+        self.adaptation_dtatset = os.path.join(ROOT_DIR, self.input_dataset_path + '_adaptation')
         # the data set for train and validation
         self.X_train = None
         self.X_test = None
@@ -48,6 +54,7 @@ class CNN(object):
         self.activation_function = 'softmax'  # 'sigmoid'
         # History of the training
         self.hist = None
+        self._build_model()
 
     def load_data_set(self):
         '''
@@ -58,7 +65,7 @@ class CNN(object):
         # global nb_classes, X_train, X_test, y_train, y_test
         # get the categories according to the folder
         categories = os.listdir(self.adaptation_dtatset)
-        nb_classes = len(categories)
+        self.nb_classes = len(categories)
         # create matrix to store all images flatten
         img_matrix = []
         label = []
@@ -77,29 +84,29 @@ class CNN(object):
         label = np.array(label)
 
         # random_state for psudo random
-        data, label = shuffle(img_matrix, label, random_state=2)
-        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=4)
+        data, label = shuffle(img_matrix, label) #random_state=2
+        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2)
 
         # reshape the data
-        X_train = X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
-        X_test = X_test.reshape(self.X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+        X_train = X_train.reshape(X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+        X_test = X_test.reshape(X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
 
         self.X_train = X_train.astype('float32')
         self.X_test = X_test.astype('float32')
 
         # help for faster convert
-        self.X_train /= 255
-        self.X_test /= 255
+        # self.X_train /= 255
+        # self.X_test /= 255
 
         # convert class vectore to binary class matrices
-        self.y_train = np_utils.to_categorical(y_train, nb_classes)
-        self.y_test = np_utils.to_categorical(y_test, nb_classes)
+        self.y_train = np_utils.to_categorical(y_train, self.nb_classes)
+        self.y_test = np_utils.to_categorical(y_test, self.nb_classes)
 
-        print('X_train shape: ', self.X_train.shape)
-        print(self.X_train.shape[0], 'train example')
-        print(self.X_test.shape[0], 'validation example')
+        # print('X_train shape: ', self.X_train.shape)
+        # print(self.X_train.shape[0], 'train example')
+        # print(self.X_test.shape[0], 'validation example')
 
-    def build_model(self):
+    def _build_model(self):
         # the data set load, shuffled and split between train and validation sets
         self.model = Sequential()
 
@@ -136,6 +143,24 @@ class CNN(object):
         # binary_accuracy, categorical_accuracy
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+    def _print_confusion_matrix(self):
+        y_pred = self.model.predict_classes(self.X_test)
+        print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
+
+    def train_model(self):
+        '''
+            saves the model weights after each epoch if the validation loss decreased
+        '''
+        if self.X_train is None:
+            self.load_data_set()
+
+        checkpointer = ModelCheckpoint(filepath=self.model_path, verbose=1, save_best_only=True)
+        confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._print_confusion_matrix())
+        hist = self.model.fit(self.X_train, self.y_train, batch_size=self.batch_size, epochs=self.nb_epoch, verbose=1,
+                              validation_data=(self.X_test, self.y_test), callbacks=[checkpointer, confusion_matrix])
+        # hist = model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_split=0.2)
+        self.save(self.model_path)
+
     def save(self, out_file):
         del self.X_train
         del self.X_test
@@ -144,11 +169,30 @@ class CNN(object):
         self.model_path = out_file
         self.model.save(out_file+'.h5')
         del self.model
-        with open(out_file+'.pkl', 'wb') as output:
-            pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+        with open(out_file+'.json', 'wb') as output:
+            output.write(json.dumps(self.__dict__))
+            # pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
 
     def load(self, in_file):
-        with open(in_file+'.pkl', 'rb') as input:
-            tmp = pickle.load(input)
-        self.__dict__ = tmp.__dict__.copy()
+        with open(in_file+'.json', 'rb') as input:
+            # tmp = pickle.load(input)
+            tmp = json.loads(input.read())
+        self.__dict__ = tmp
         self.model = load_model(in_file + '.h5')
+
+    def predict(self, frame):
+        frame = np.array(np.array(Image.open(frame)).flatten())
+        frame = frame.reshape(1, self.nb_channel, self.img_rows, self.img_cols)
+        pred = self.model.predict(frame, batch_size=1)
+        return 0 if pred[0][0] > pred[0][1] else 1
+
+    def get_random_frame(self):
+        categories = os.listdir(self.adaptation_dtatset)
+        category = randint(0, self.nb_classes-1)
+        category_path = os.path.join(self.adaptation_dtatset, categories[category])
+        cases = os.listdir(category_path)
+        case_index = randint(0, len(cases)-1)
+        frames = os.listdir(os.path.join(category_path, cases[case_index]))
+        frame_index = randint(0, len(frames)-1)
+        random_frame = os.path.join(category_path, cases[case_index], frames[frame_index])
+        return random_frame, category

@@ -10,7 +10,6 @@ class TestSaveLoadCNN(TestCase):
     def setUp(self):
         self.path = os.path.join(ROOT_DIR, 'cnn_models', 'test_model')
         self.cnn = CNN(nb_epoch=15, pool_size=3, kernel_size=4)
-        self.cnn.build_model()
         self.cnn.save(self.path)
         self.cnn = None
 
@@ -18,7 +17,7 @@ class TestSaveLoadCNN(TestCase):
         self.cnn = CNN()
         self.cnn.load(self.path)
         self.assertEqual(self.cnn.nb_epoch, 15)
-        self.assertEqual(self.cnn.pool_size, (3, 3))
+        self.assertEqual(tuple(self.cnn.pool_size), (3, 3))
         self.assertEqual(self.cnn.kernel_size, 4)
 
     @classmethod
