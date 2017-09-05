@@ -1,6 +1,7 @@
-#!/usr/bin/env python
 import os
 import sys
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "reflux_analyze.settings")
