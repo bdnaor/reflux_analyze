@@ -1,7 +1,6 @@
 import json
 import os
 import numpy as np
-import pickle
 
 from random import randint
 from keras.callbacks import ModelCheckpoint, LambdaCallback
