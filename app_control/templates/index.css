@@ -22,12 +22,14 @@ body{
     border: 1px solid #333;
     overflow: auto;
     display: inline-block;
+    float: left;
 }
 #workspace{
     width: 1024px;
-    height: 600px;
+    /*height: 600px;*/
     margin: 0px auto;
     margin-left: 50px;
+    margin-top: 50px;
     background-color: white;
     display: inline-block;
 }
@@ -44,6 +46,32 @@ body{
 }
 .model:hover {
     background-color: yellow;
+    cursor: pointer;
+}
+.selected{
+    background-color: #5b80b2;
+}
+#onCreate{
+    /*width: 1024px;*/
+    /*height: 600px;*/
+    /*margin-top:0px;*/
+    /*margin-bottom: 0px;*/
+    /*background-color: palevioletred;*/
+    /*display: inline-block;*/
+    width: 50%;
+    margin: 0 auto;
+}
+h2{
+    /*margin-bottom: 0px;*/
+    margin-top: 0px;
+}
+label{
+    display:inline-block;
+    width:200px;
+    margin-right:30px;
+    text-align:left;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 /*
 textarea{*/

@@ -18,12 +18,12 @@ from manage import ROOT_DIR
 
 
 class CNN(object):
-    def __init__(self, img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):
+    def __init__(self, img_rows=200, img_cols=200, nb_channel=3, batch_size=32, epoch=5, pool_size=2, kernel_size=3):
         self.img_rows = img_rows
         self.img_cols = img_cols
         self.nb_channel = nb_channel
         self.batch_size = batch_size
-        self.nb_epoch = nb_epoch
+        self.epoch = epoch
         # number of convolution filter to use
         self.nb_filters = 32
         # size of pooling area for max pooling
@@ -155,7 +155,7 @@ class CNN(object):
 
         checkpointer = ModelCheckpoint(filepath=self.model_path, verbose=1, save_best_only=True)
         confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._print_confusion_matrix())
-        hist = self.model.fit(self.X_train, self.y_train, batch_size=self.batch_size, epochs=self.nb_epoch, verbose=1,
+        hist = self.model.fit(self.X_train, self.y_train, batch_size=self.batch_size, epochs=self.epoch, verbose=1,
                               validation_data=(self.X_test, self.y_test), callbacks=[checkpointer, confusion_matrix])
         # hist = model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_split=0.2)
         self.save(self.model_path)
@@ -195,3 +195,12 @@ class CNN(object):
         frame_index = randint(0, len(frames)-1)
         random_frame = os.path.join(category_path, cases[case_index], frames[frame_index])
         return random_frame, category
+
+    def get_info(self):
+        return {
+            'img_rows': self.img_rows,
+            'img_cols': self.img_cols,
+            'epoch': self.epoch,
+            'pool_size': self.pool_size[0],
+            'kernel_size': self.kernel_size,
+        }

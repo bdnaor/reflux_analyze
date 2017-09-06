@@ -11,23 +11,51 @@
 			<span id="h1">Reflux Analyzer</span>
 		</div>
         {% verbatim %}
-            <!--  Template tags ignored in here  -->
             <div id="app_control">
-                <!--{{ title }}-->
-                <!--<template v-once>{{ get_models() }}</template>-->
                 <div id="models">
                     <p style="background-color:#8c8c8c;margin-top:0px;margin-bottom: 0px;">Models:
-                        <button id="create_model" style="margin-left: 83px;">+</button>
-                        <button onclick="" >-</button>
-                        <button onclick="">train</button>
-                        <button onclick="">predict</button>
+                        <button id="create_model" style="margin-left: 83px;" @click="create_model">+</button>
+                        <button @click="delete_model" >-</button>
+                        <button @click="train_model">train</button>
+                        <button @click="predict_model">predict</button>
                     </p>
-                    <p class="model" v-for="model in models">{{ model }}</p>
-                    <!--{% for model in models %}-->
-                        <!--<p style="margin-top:0px;margin-bottom: 0px;">{{model}}</p>-->
-                    <!--{% endfor %}-->
+
+                    <template ref="models_names">
+                        <!--@click="select_model(model)"-->
+                    <p v-for="model in Object.keys(models)"
+                       v-bind:class="['model', { selected: selected_model == model}]"
+                       v-on:click="selected_model = model"
+                       v-bind:ref="model">{{ model }}</p>
+                    </template>
+
                 </div>
-                <div id="workspace"></div>
+                <div id="workspace">
+                    <h2 id="work_header"style="background-color:#8c8c8c">{{work_header}}</h2>
+                    <div v-if="mode == 'create_model'" id="onCreate">
+                        <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
+                        <span><label>Model Name: </label><input type="text" ref="model_name" size="35"></span><br/>
+                        <span><label>Image Rows: </label><input type="text" ref="img_rows" size="35" value="200"></span><br/>
+                        <span><label>Image Columns: </label><input type="text" ref="img_cols" size="35" value="200"></span><br/>
+                        <!--<span><label>Image Color: </label><input type="text" ref="nb_channel" size="35"></span><br/>-->
+                        <span><label>Epoch: </label><input type="text" ref="epoch" size="35" value="5"></span><br/>
+                        <span><label>Kernel Size: </label><input type="text" ref="kernel_size" size="35" value="3"></span><br/>
+                        <span><label>Pool Size: </label><input type="text" ref="pool_size" size="35" value="2"></span><br/>
+                        <button style="margin-left: 240px;margin-top: 38px;margin-bottom: 40px;" @click="post_create">create</button>
+                    </div>
+
+
+
+                    <div v-if="mode == 'model_details'" id="model_details">
+                        <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
+                        <span><label>Model Name: </label><input v-bind:value="selected_model" type="text" ref="model_name" size="35" disabled></span><br/>
+                        <span><label>Image Rows: </label><input v-bind:value="models[selected_model].img_rows" type="text" ref="img_rows" size="35" disabled></span><br/>
+                        <span><label>Image Columns: </label><input v-bind:value="models[selected_model].img_cols" type="text" ref="img_cols" size="35" disabled></span><br/>
+                        <!--<span><label>Image Color: </label><input type="text" ref="nb_channel" size="35"></span><br/>-->
+                        <span><label>Epoch: </label><input v-bind:value="models[selected_model].epoch" type="text" ref="epoch" size="35" disabled></span><br/>
+                        <span><label>Kernel Size: </label><input v-bind:value="models[selected_model].kernel_size" type="text" ref="kernel_size" size="35" disabled></span><br/>
+                        <span><label>Pool Size: </label><input v-bind:value="models[selected_model].pool_size" type="text" ref="pool_size" size="35" disabled></span><br/>
+                    </div>
+                </div>
             </div>
         {% endverbatim %}
 	</body>
