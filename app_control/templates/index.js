@@ -39,6 +39,11 @@ window.onload = function (){
                 this.predict_result = value;
                 // console.log(value)
             },
+            mode: function (value) {
+                if(value != 'model_predict'){
+                    this.reset();
+                }
+            }
         },
         methods:{
             get_models: function () {
