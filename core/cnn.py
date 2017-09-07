@@ -46,6 +46,7 @@ class CNN(object):
             self.dropout = params.get('dropout', 0.25)
             self.activation_function = params.get('activation_function','softmax')  # 'sigmoid'
             self._build_model()
+            self.res = []
 
         # History of the training
         self.hist = None
@@ -147,31 +148,40 @@ class CNN(object):
         # binary_accuracy, categorical_accuracy
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    def _calculate_confusion_matrix(self):
+    def _calculate_confusion_matrix(self, epoch, logs):
         y_pred = self.model.predict_classes(self.X_test)
-        self.tn, self.fp, self.fn, self.tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
+        tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
+        self.res.append([tn, tp, fn, tp])
         # print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
+        self.save()
 
-    def train_model(self):
+    def train_model(self, n_epoch=None):
         '''
             saves the model weights after each epoch if the validation loss decreased
         '''
+        if n_epoch is None:
+            n_epoch = self.epoch
         if self.X_train is None:
             self.load_data_set()
 
-        checkpointer = ModelCheckpoint(filepath=self.model_path, verbose=1, save_best_only=True)
-        confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix())
-        self.hist = self.model.fit(self.X_train, self.y_train, batch_size=self.batch_size, epochs=self.epoch, verbose=1,
-                              validation_data=(self.X_test, self.y_test), callbacks=[checkpointer, confusion_matrix])
-        # hist = model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_split=0.2)
-        self.save()
+        check_pointer = ModelCheckpoint(filepath=self.model_path + '.h5', verbose=1, save_best_only=True)
+        _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
+        self.hist = self.model.fit(self.X_train,
+                                   self.y_train,
+                                   batch_size=self.batch_size,
+                                   epochs=n_epoch,
+                                   verbose=1,
+                                   validation_data=(self.X_test, self.y_test),
+                                   callbacks=[check_pointer, _confusion_matrix])  # validation_split=0.2
+        # self.save()
 
     def save(self):
         del self.X_train
         del self.X_test
         del self.y_train
         del self.y_test
-        save_model(self.model, self.model_path+'.h5')
+        # save_model(self.model, self.model_path+'.h5')
+        self.model.save(self.model_path +'.h5')
         del self.model
         with open(self.model_path+'.json', 'wb') as output:
             output.write(json.dumps(self.__dict__))
@@ -205,11 +215,11 @@ class CNN(object):
         return {
             'img_rows': self.img_rows,
             'img_cols': self.img_cols,
-            'epoch': self.epoch,
+            'epoch': len(self.res),
             'pool_size': self.pool_size[0],
             'kernel_size': self.kernel_size,
-            'tn': self.tn,
-            'tp': self.fp,
-            'fn': self.fn,
-            'fp': self.tp
+            'tn': self.res[-1][0],
+            'tp': self.res[-1][1],
+            'fn': self.res[-1][2],
+            'fp': self.res[-1][3]
         }
