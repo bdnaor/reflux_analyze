@@ -51,6 +51,10 @@ window.onload = function (){
                 this.mode = 'model_details';
                 this.work_header = 'Model Details';
                 this.selected_model = model;
+                // this.models[this.selected_model].tp = 50;
+                // this.models[this.selected_model].tn = 50;
+                // this.models[this.selected_model].fn = 0;
+                // this.models[this.selected_model].fp = 0;
             },
             create_model: function () {
                 this.mode = 'create_model';
@@ -140,6 +144,75 @@ window.onload = function (){
                   }
                 });
             },
+            total_population: function () {
+                var m = this.models[this.selected_model]
+                return (m.tp + m.tn + m.fp + m.fn);
+            },
+            true_positive: function () {
+                return this.models[this.selected_model].tp
+            },
+            true_negative: function () {
+                return this.models[this.selected_model].tn
+            },
+            false_positive: function () {
+                return this.models[this.selected_model].fp
+            },
+            false_negative: function () {
+                return this.models[this.selected_model].fn
+            },
+            prevalence: function () {
+                var tot_pos = this.true_negative() + this.false_positive();
+                return ((tot_pos/this.total_population())*100).toFixed(2);
+            },
+            accuracy: function () {
+                var tot_true = this.true_negative() + this.true_positive();
+                return ((tot_true/this.total_population())*100).toFixed(2);
+            },
+            precision: function () {
+                var tot_pos = this.true_positive() + this.false_positive();
+                return ((this.true_positive()/tot_pos)*100).toFixed(2);
+            },
+            fdr: function () {
+                var tot_pos = this.true_positive() + this.false_positive();
+                return ((this.false_positive()/tot_pos)*100).toFixed(2);
+            },
+            false_omission_rate: function () {
+                var tot_negative = this.false_negative() + this.true_negative();
+                return ((this.false_negative()/tot_negative)*100).toFixed(2);
+            },
+            negative_predictive_value: function () {
+                var tot_negative = this.false_negative() + this.true_negative();
+                return ((this.true_negative()/tot_negative)*100).toFixed(2);
+            },
+            tpr: function(){
+                var tot_con_pos = this.true_positive() + this.false_negative();
+                return ((this.true_positive()/tot_con_pos)*100).toFixed(2);
+            },
+            fnr: function(){
+                var tot_con_pos = this.true_positive() + this.false_negative();
+                return ((this.false_negative()/tot_con_pos)*100).toFixed(2);
+            },
+            fpr: function () {
+                var tot_con_neg = this.false_positive() + this.true_negative();
+                return ((this.false_positive()/tot_con_neg)*100).toFixed(2);
+            },
+            tnr: function () {
+                var tot_con_neg = this.false_positive() + this.true_negative();
+                return ((this.true_negative()/tot_con_neg)*100).toFixed(2);
+            },
+            positive_likelihood_ratio: function () {
+                return (this.tpr()/this.fpr()).toFixed(2);
+            },
+            negative_likelihood_ratio: function () {
+                return (this.fnr()/this.tnr()).toFixed(2);
+            },
+            diagnostic_odds_ratio: function () {
+                return (this.positive_likelihood_ratio()/this.negative_likelihood_ratio()).toFixed(2);
+            },
+            score: function () {
+                // return (2*((this.tpr()*this.precision())/(this.tpr()+this.precision()))).toFixed(2);
+                return ((2/((1/this.tpr())+(1/this.precision())))/100).toFixed(2);
+            }
         }
     });
 };

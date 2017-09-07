@@ -12,7 +12,7 @@ from PIL import Image
 from keras.utils import np_utils
 from keras.layers.convolutional import MaxPooling2D
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.models import Sequential, load_model
+from keras.models import Sequential, save_model, load_model
 
 from manage import ROOT_DIR
 
@@ -21,14 +21,16 @@ class CNN(object):
     def __init__(self, params, reload=False):
         self.model_name = params['model_name']
         self.model_path = os.path.join(ROOT_DIR, 'cnn_models', self.model_name)
+        # the original data set
+        self.input_dataset_path = 'dataset'
+        # the data set after resize
+        self.adaptation_dtatset = os.path.join(ROOT_DIR, self.input_dataset_path +'_' +self.model_name +'_adaptation')
+        # the deep learning model
+        self.model = None
+
         if reload:
             self._load()
         else:
-            # the original data set
-            self.input_dataset_path = 'dataset'
-            # the data set after resize
-            self.adaptation_dtatset = os.path.join(ROOT_DIR, self.input_dataset_path +'_' +self.model_name +'_adaptation')
-
             self.img_rows = params.get('img_rows', 200)
             self.img_cols = params.get('img_cols', 200)
             self.nb_channel = params.get('nb_channel', 3)
@@ -43,13 +45,11 @@ class CNN(object):
             self.kernel_size = params.get('kernel_size', 3)
             self.dropout = params.get('dropout', 0.25)
             self.activation_function = params.get('activation_function','softmax')  # 'sigmoid'
+            self._build_model()
 
         # History of the training
         self.hist = None
         self.category = []
-
-        # the deep learning model
-        self.model = None
 
         # the data set for train and validation
         self.X_train = None
@@ -58,7 +58,7 @@ class CNN(object):
         self.y_test = None
 
         self.load_data_set()
-        self._build_model()
+
 
     def load_data_set(self):
         '''
@@ -88,8 +88,8 @@ class CNN(object):
         label = np.array(label)
 
         # random_state for psudo random
-        data, label = shuffle(img_matrix, label) #random_state=2
-        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2)
+        data, label = shuffle(img_matrix, label, random_state=2) #random_state=2
+        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=2)
 
         # reshape the data
         X_train = X_train.reshape(X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
@@ -147,9 +147,10 @@ class CNN(object):
         # binary_accuracy, categorical_accuracy
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    def _print_confusion_matrix(self):
+    def _calculate_confusion_matrix(self):
         y_pred = self.model.predict_classes(self.X_test)
-        print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
+        self.tn, self.fp, self.fn, self.tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
+        # print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
 
     def train_model(self):
         '''
@@ -159,18 +160,18 @@ class CNN(object):
             self.load_data_set()
 
         checkpointer = ModelCheckpoint(filepath=self.model_path, verbose=1, save_best_only=True)
-        confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._print_confusion_matrix())
-        hist = self.model.fit(self.X_train, self.y_train, batch_size=self.batch_size, epochs=self.epoch, verbose=1,
+        confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix())
+        self.hist = self.model.fit(self.X_train, self.y_train, batch_size=self.batch_size, epochs=self.epoch, verbose=1,
                               validation_data=(self.X_test, self.y_test), callbacks=[checkpointer, confusion_matrix])
         # hist = model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_split=0.2)
-        self.save(self.model_path)
+        self.save()
 
     def save(self):
         del self.X_train
         del self.X_test
         del self.y_train
         del self.y_test
-        self.model.save(self.model_path+'.h5')
+        save_model(self.model, self.model_path+'.h5')
         del self.model
         with open(self.model_path+'.json', 'wb') as output:
             output.write(json.dumps(self.__dict__))
@@ -191,7 +192,7 @@ class CNN(object):
 
     def get_random_frame(self):
         categories = os.listdir(self.adaptation_dtatset)
-        category = randint(0, self.nb_classes-1)
+        category = randint(0, len(self.category))
         category_path = os.path.join(self.adaptation_dtatset, categories[category])
         cases = os.listdir(category_path)
         case_index = randint(0, len(cases)-1)
@@ -207,4 +208,8 @@ class CNN(object):
             'epoch': self.epoch,
             'pool_size': self.pool_size[0],
             'kernel_size': self.kernel_size,
+            'tn': self.tn,
+            'tp': self.fp,
+            'fn': self.fn,
+            'fp': self.tp
         }

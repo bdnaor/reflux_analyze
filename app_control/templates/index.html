@@ -14,7 +14,7 @@
             <div id="app_control">
                 <div id="models">
                     <p style="background-color:#8c8c8c;margin-top:0px;margin-bottom: 0px;">Models:
-                        <button id="create_model" style="margin-left: 83px;" @click="create_model">+</button>
+                        <button id="create_model" style="margin-left: 32px;" @click="create_model">+</button>
                         <button @click="delete_model" >-</button>
                         <button @click="train_model">train</button>
                         <button @click="predict_model">predict</button>
@@ -46,7 +46,9 @@
 
 
                     <div v-if="mode == 'model_details'" id="model_details">
+                        <div id="created_info" style="margin: 20;">
                         <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
+                        <label><b><i>Crated Info: </i></b></label><br/>
                         <span><label>Model Name: </label><input v-bind:value="selected_model" type="text" ref="model_name" size="35" disabled></span><br/>
                         <span><label>Image Rows: </label><input v-bind:value="models[selected_model].img_rows" type="text" ref="img_rows" size="35" disabled></span><br/>
                         <span><label>Image Columns: </label><input v-bind:value="models[selected_model].img_cols" type="text" ref="img_cols" size="35" disabled></span><br/>
@@ -54,10 +56,65 @@
                         <span><label>Epoch: </label><input v-bind:value="models[selected_model].epoch" type="text" ref="epoch" size="35" disabled></span><br/>
                         <span><label>Kernel Size: </label><input v-bind:value="models[selected_model].kernel_size" type="text" ref="kernel_size" size="35" disabled></span><br/>
                         <span><label>Pool Size: </label><input v-bind:value="models[selected_model].pool_size" type="text" ref="pool_size" size="35" disabled></span><br/>
+                        </div>
+                        <div id="confusion_matrix" style="margin: 20;">
+                            <label><b><i>Confusion Matrix: </i></b></label><br/>
+                            <table class="wikitable" align="center" style="text-align:center; border:none; background:transparent;">
+                                <tbody>
+                                    <tr>
+                                        <td style="border:none;" colspan="2"></td>
+                                        <td style="background:#eeeebb;" colspan="2"><b>True condition</b></td>
+                                        <td style="border:none;"></td>
+                                        <td style="background:#cceecc;border-left:double silver;" colspan="2" rowspan="2">Accuracy (ACC) = <span style="font-size:118%;"><span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ&nbsp;True positive + Σ True negative</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Total population</span></span><br/>{{accuracy()}}%</span></span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border:none;"></td>
+                                        <td style="background:#dddddd;">Total population <b>{{ total_population() }}</b></td>
+                                        <td style="background:#ffffcc;">Condition positive</td>
+                                        <td style="background:#ddddaa;">Condition negative</td>
+                                        <td style="background:#eeeecc;">Prevalence<span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ&nbsp;Condition positive</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Total population</span></span></span></span><br/>{{ prevalence()}}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background:#bbeeee;" rowspan="2"><b>Predicted<br>
+                                        condition</b></td>
+                                        <td style="background:#ccffff;">Predicted condition<br>
+                                        positive</td>
+                                        <td style="background:#ccffcc;"><span style="color:#006600;"><b>True positive {{ true_positive()}}</b></span></td>
+                                        <td style="background:#eedddd;"><span style="color:#cc0000;"><b>False positive {{false_positive()}}</b></span><br>Type error I</td>
+                                        <td style="background:#ccffee;border-top:double silver;">Positive predictive value (PPV), Precision = <span style="font-size:118%;white-space:nowrap;"><span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ True positive</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Predicted&nbsp;condition&nbsp;positive</span></span></span><br/>{{precision()}}%</span></td>
+                                        <td style="background:#cceeff;border-top:double silver;" colspan="2">False discovery rate(FDR)=<span style="font-size:118%;white-space:nowrap;"><span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ False positive</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Predicted&nbsp;condition&nbsp;positive</span></span></span></span><br/>{{fdr()}}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background:#aadddd;">Predicted condition<br>negative</td>
+                                        <td style="background:#ffdddd;"><span style="color:#cc0000;"><b>False negative {{false_negative()}}</b></span><br>Type  error II </td>
+                                        <td style="background:#bbeebb;"><span style="color:#006600;"><b>True negative {{true_negative()}}</b></span></td>
+                                        <td style="background:#eeddee;border-bottom:double silver;">False omission rate (FOR)= <span style="font-size:118%;white-space:nowrap;"><span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ False negative</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Predicted&nbsp;condition&nbsp;negative</span></span></span></span><br/>{{false_omission_rate()}}%</td>
+                                        <td style="background:#aaddcc;border-bottom:double silver;" colspan="2">Negative predictive value (NPV)<span style="font-size:118%;white-space:nowrap;"><span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ True negative</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Predicted&nbsp;condition&nbsp;negative</span></span></span></span><br/>{{negative_predictive_value()}}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border:none;vertical-align:bottom;padding:0 2px 0 0;" colspan="2" rowspan="2">
+                                        <div class="noresize" style="height: 110px; width: 220px; "><a href="http://upload.wikimedia.org/wikipedia/commons/0/0e/DiagnosticTesting_Diagram.svg" class="plainlinks" rel="nofollow" title="http://upload.wikimedia.org/wikipedia/commons/0/0e/DiagnosticTesting_Diagram.svg"><img alt="DiagnosticTesting Diagram.svg" src="//upload.wikimedia.org/wikipedia/commons/thumb/0/0e/DiagnosticTesting_Diagram.svg/220px-DiagnosticTesting_Diagram.svg.png" width="220" height="110" srcset="//upload.wikimedia.org/wikipedia/commons/thumb/0/0e/DiagnosticTesting_Diagram.svg/330px-DiagnosticTesting_Diagram.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/0/0e/DiagnosticTesting_Diagram.svg/440px-DiagnosticTesting_Diagram.svg.png 2x" data-file-width="512" data-file-height="256"></a>
+                                        <div style="margin-left: 200px; margin-top: -20px; text-align: left;"><a href="/wiki/File:DiagnosticTesting_Diagram.svg"><img src="/w/extensions/ImageMap/desc-20.png?15600" style="border: none;"></a></div>
+                                        </div>
+                                        </td>
+                                        <td style="background:#eeffcc;">True positive rate(TPR), Recall, Sensitivity, probability of detection <span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ True positive</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Condition&nbsp;positive</span></span></span></span><br/>{{tpr()}}%</td>
+                                        <td style="background:#eeddbb;">False positive rate (FPR), Fall-out, probability of false alarm <span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ False positive</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Condition&nbsp;negative</span></span></span></span><br/>{{fpr()}}%</td>
+                                        <td style="background:#eeeeee;">Positive likelihood ratio (LR+)<span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">TPR</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">FPR</span></span></span></span><br/>{{positive_likelihood_ratio()}}</td>
+                                        <td style="background:#dddddd;" rowspan="2">Diagnostic odds ratio (DOR) <span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">LR+</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">LR−</span></span></span></span><br/>{{diagnostic_odds_ratio()}}</td>
+                                        <td style="background:#ddffdd;border-left:double silver;line-height:2;" rowspan="2">F1 Score = <span style="font-size:150%;white-space:nowrap;"><span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">2</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">1</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">recall</span></span>+<span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">1</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">precision</span></span></span></span></span></span><br/>{{score()}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background:#ffeecc;">False negative rate (FNR), Miss rate <span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ False negative</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Condition&nbsp;positive</span></span></span></span><br/>{{fnr()}}%</td>
+                                        <td style="background:#ddeebb;">True negative rate (TNR), Specificity (SPC) <span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">Σ True negative</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">Σ&nbsp;Condition&nbsp;negative</span></span></span></span><br/>{{tnr()}}%</td>
+                                        <td style="background:#cccccc;">Negative likelihood ratio (LR−)<span style="font-size:118%;white-space:nowrap;">= <span class="texhtml"><span class="sfrac nowrap" style="display:inline-block; vertical-align:-0.5em; font-size:85%; text-align:center;"><span style="display:block; line-height:1em; margin:0 0.1em;">FNR</span><span style="display:block; line-height:1em; margin:0 0.1em; border-top:1px solid;">TNR</span></span></span></span><br/>{{negative_likelihood_ratio()}}</td>
+                                    </tr>
+                                </tbody></table>
+
+                        </div>
                     </div>
 
 
-                    <div v-if="mode == 'model_predict'" id="model_predict">
+                    <div v-if="mode == 'model_predict'" id="model_predict" style="margin: 20;">
                         <h1 style="width: 100%;">Using Model: {{selected_model}}</h1>
                         <template>
                             <div class="container">
