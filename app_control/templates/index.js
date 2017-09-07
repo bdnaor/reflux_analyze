@@ -1,28 +1,44 @@
-// $(document).ready(function(){
-//     function createModel() {
-//         alert('kuku');
-//     }
-//     $("#create_model").click(createModel);
-//
-//
-// });
+const STATUS_INITIAL = 0, STATUS_SAVING = 1, STATUS_SUCCESS = 2, STATUS_FAILED = 3;
 
 window.onload = function (){
     new Vue({
         el: '#app_control',
-        data: {title: 'jjjdlkjf', models :[], mode: 'start', selected_model:'', work_header:''},
-        // computed:{models: function(){$.get('/get_models', function(models){return models;})}},
+        data: {
+            title: 'jjjdlkjf',
+            models :[],
+            mode: 'start',
+            selected_model:'',
+            work_header:'',
+            uploadedFiles: [],
+            uploadError: null,
+            currentStatus: null,
+            uploadFieldName: 'photos',
+            predict_result : {}
+        },
+        computed: {
+          isInitial: function() {
+            return this.currentStatus === STATUS_INITIAL;
+          },
+          isSaving: function() {
+            return this.currentStatus === STATUS_SAVING;
+          },
+          isSuccess: function() {
+            return this.currentStatus === STATUS_SUCCESS;
+          },
+          isFailed: function() {
+            return this.currentStatus === STATUS_FAILED;
+          }
+        },
         mounted: function() {
-            this.get_models()
+            this.get_models();
+            this.reset();
         },
         watch:{
             models:function(){},
-            selected_model: function (value) {
-                this.mode = 'model_details';
-                this.work_header = 'Model Details';
-                // this.selected_model = value;
-                // alert(value);
-            }
+            predict_result: function(value){
+                this.predict_result = value;
+                // console.log(value)
+            },
         },
         methods:{
             get_models: function () {
@@ -30,6 +46,11 @@ window.onload = function (){
                 $.get('/get_models', function(data){
                     vm.models = JSON.parse(data);
                 });
+            },
+            show_details: function(model){
+                this.mode = 'model_details';
+                this.work_header = 'Model Details';
+                this.selected_model = model;
             },
             create_model: function () {
                 this.mode = 'create_model';
@@ -42,7 +63,8 @@ window.onload = function (){
                 alert('train!!!')
             },
             predict_model: function () {
-                alert('predict!!!')
+                this.mode = 'model_predict';
+                this.work_header = 'Predict Image';
             },
             post_create: function () {
                 var model_name = this.$refs['model_name'].value;
@@ -70,8 +92,54 @@ window.onload = function (){
                         // TODO: show error msg
                     }
                 })
-            }
+            },
+            reset: function() {
+                // reset form to initial state
+                this.currentStatus = STATUS_INITIAL;
+                this.predict_result = {};
+            },
+            filesChange: function(fieldName, fileList) {
+                // handle file changes
+                var fd = new FormData();
+                var vm = this; // Keep reference to viewmodel object
 
+                var fileDict = {}
+                if (!fileList.length) return;
+
+                 // append the files to FormData
+                for (x in Object.keys(fileList)){
+                    fd.append(fileList[x].name, fileList[x]);
+                    fileDict[fileList[x].name] = fileList[x];
+                }
+                fd.append('model_name', this.selected_model);
+
+                function get_listener(i) {
+                    load_lisinter = function (e) {
+                        vm.$refs[i][0].src = e.target.result;
+                    };
+                    return load_lisinter
+                }
+
+
+                $.ajax({
+                  url: '/predict_images',
+                  data: fd,
+                  processData: false,
+                  contentType: false,
+                  type: 'POST',
+                  success: function(data){
+                      for(i=0;i<Object.keys( data.predictions).length; i++){
+                          var reader = new FileReader();
+                          k = Object.keys( data.predictions)[i];
+                          vm.predict_result[k] = {'result': data.predictions[k]};
+                          reader.addEventListener('load',get_listener(k),false);
+                          reader.readAsDataURL(fileDict[k]);
+                      }
+                      vm.currentStatus = STATUS_SUCCESS;
+                      console.log(resultBuff);
+                  }
+                });
+            },
         }
-    })
-}
+    });
+};

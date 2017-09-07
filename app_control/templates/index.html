@@ -3,7 +3,7 @@
         <link rel="stylesheet" href="static/index.css">
         <script type="text/javascript" src="static/js/jquery-3.2.1.js"></script>
         <script type="text/javascript" src="static/index.js"></script>
-        <script src="https://unpkg.com/vue/dist/vue.js"></script>
+        <script src="static/js/vue.js"></script>
         <title>Reflux Analyzer</title>
 	</head>
 	<body>
@@ -24,13 +24,14 @@
                         <!--@click="select_model(model)"-->
                     <p v-for="model in Object.keys(models)"
                        v-bind:class="['model', { selected: selected_model == model}]"
-                       v-on:click="selected_model = model"
+                       v-on:click="show_details(model)"
                        v-bind:ref="model">{{ model }}</p>
                     </template>
-
                 </div>
+
                 <div id="workspace">
                     <h2 id="work_header"style="background-color:#8c8c8c">{{work_header}}</h2>
+
                     <div v-if="mode == 'create_model'" id="onCreate">
                         <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
                         <span><label>Model Name: </label><input type="text" ref="model_name" size="35"></span><br/>
@@ -44,7 +45,6 @@
                     </div>
 
 
-
                     <div v-if="mode == 'model_details'" id="model_details">
                         <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
                         <span><label>Model Name: </label><input v-bind:value="selected_model" type="text" ref="model_name" size="35" disabled></span><br/>
@@ -55,7 +55,48 @@
                         <span><label>Kernel Size: </label><input v-bind:value="models[selected_model].kernel_size" type="text" ref="kernel_size" size="35" disabled></span><br/>
                         <span><label>Pool Size: </label><input v-bind:value="models[selected_model].pool_size" type="text" ref="pool_size" size="35" disabled></span><br/>
                     </div>
+
+
+                    <div v-if="mode == 'model_predict'" id="model_predict">
+                        <h1 style="width: 100%;">Using Model: {{selected_model}}</h1>
+                        <template>
+                            <div class="container">
+                              <!--UPLOAD-->
+                              <form enctype="multipart/form-data" novalidate v-if="isInitial || isSaving">
+                                <h2>Upload images</h2>
+                                <div class="dropbox">
+                                  <input type="file" multiple :name="uploadFieldName" :disabled="isSaving" @change="filesChange($event.target.name, $event.target.files); fileCount = $event.target.files.length" accept="image/*" class="input-file">
+                                    <p v-if="isInitial">
+                                      Drag your file(s) here to begin<br> or click to browse
+                                    </p>
+                                    <p v-if="isSaving">
+                                      Uploading {{ fileCount }} files...
+                                    </p>
+                                </div>
+                              </form>
+                                <div v-if="isSuccess">
+                                    <button @click="reset">Predict Others</button>
+                                    <div style="display: grid; grid-template-columns: 30% 30% 30%;grid-gap: 3%;">
+                                        <template  v-for="img in Object.keys(predict_result)">
+                                            <div v-bind:class="['prediction', predict_result[img]['result']]" style="display: grid;">
+                                                  <!--style="width: 150px; height: 150px;"-->
+                                                <center>
+                                                    <img v-bind:ref="img">
+                                                    <label style="text-align:center;">{{ img }}</label>
+                                                    <label style="text-align:center;">{{ predict_result[img]['result'] }}</label>
+                                                </center>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                             </div>
+                        </template>
+                        <template>
+                            <button>predict random image</button>
+                        </template>
+                    </div>
                 </div>
+
             </div>
         {% endverbatim %}
 	</body>

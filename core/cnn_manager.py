@@ -1,4 +1,6 @@
 import os
+import shutil
+
 from core.cnn import CNN
 from manage import ROOT_DIR
 from utils.singleton import singleton
@@ -18,16 +20,13 @@ class CNNManager(object):
             model_name = _file.split('.')[0]
             models_names.add(model_name)
         for i in models_names:
-            cnn = CNN()
-            model_path = os.path.join(ROOT_DIR, 'cnn_models', i)
-            cnn.load(model_path)
+            cnn = CNN({'model_name': i}, True)
             self.models[i] = cnn
 
     def add_model(self, cnn, model_name):
         if model_name in self.models.keys():
             return False, 'Model name already exist'
-        model_path = os.path.join(ROOT_DIR, 'cnn_models', model_name)
-        cnn.save(model_path)
+        cnn.save()
         self.models[model_name] = cnn
         return True, 'ok'
 
@@ -36,6 +35,7 @@ class CNNManager(object):
         del self.models[model_name]
         os.remove(cnn_model.model_path+'.h5')
         os.remove(cnn_model.model_path + '.json')
+        shutil.rmtree(cnn_model.adaptation_dtatset)
 
     def get_models(self):
         return {k: self.models[k].get_info() for k in self.models.keys()}

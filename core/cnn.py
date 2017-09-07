@@ -18,41 +18,46 @@ from manage import ROOT_DIR
 
 
 class CNN(object):
-    def __init__(self, img_rows=200, img_cols=200, nb_channel=3, batch_size=32, epoch=5, pool_size=2, kernel_size=3):
-        self.img_rows = img_rows
-        self.img_cols = img_cols
-        self.nb_channel = nb_channel
-        self.batch_size = batch_size
-        self.epoch = epoch
-        # number of convolution filter to use
-        self.nb_filters = 32
-        # size of pooling area for max pooling
-        self.pool_size = (pool_size, pool_size)
-        # convolution kernel size
-        self.kernel_size = kernel_size
+    def __init__(self, params, reload=False):
+        self.model_name = params['model_name']
+        self.model_path = os.path.join(ROOT_DIR, 'cnn_models', self.model_name)
+        if reload:
+            self._load()
+        else:
+            # the original data set
+            self.input_dataset_path = 'dataset'
+            # the data set after resize
+            self.adaptation_dtatset = os.path.join(ROOT_DIR, self.input_dataset_path +'_' +self.model_name +'_adaptation')
 
-        # number of output classes
-        self.nb_classes = 2
+            self.img_rows = params.get('img_rows', 200)
+            self.img_cols = params.get('img_cols', 200)
+            self.nb_channel = params.get('nb_channel', 3)
+            self.batch_size = params.get('batch_size', 32)
+            self.epoch = params.get('epoch', 5)
+            # number of convolution filter to use
+            self.nb_filters = params.get('nb_filters', 32)
+            # size of pooling area for max pooling
+            pool_size = params.get('pool_size', 2)
+            self.pool_size = (pool_size, pool_size)
+            # convolution kernel size
+            self.kernel_size = params.get('kernel_size', 3)
+            self.dropout = params.get('dropout', 0.25)
+            self.activation_function = params.get('activation_function','softmax')  # 'sigmoid'
+
+        # History of the training
+        self.hist = None
+        self.category = []
 
         # the deep learning model
         self.model = None
 
-        # the original data set
-        self.input_dataset_path = 'dataset'
-
-        # the data set after resize
-        self.adaptation_dtatset = os.path.join(ROOT_DIR, self.input_dataset_path + '_adaptation')
         # the data set for train and validation
         self.X_train = None
         self.X_test = None
         self.y_train = None
         self.y_test = None
 
-        self.model_path = 'cpu_cnn_model.h5'
-        self.dropout = 0.25
-        self.activation_function = 'softmax'  # 'sigmoid'
-        # History of the training
-        self.hist = None
+        self.load_data_set()
         self._build_model()
 
     def load_data_set(self):
@@ -64,11 +69,11 @@ class CNN(object):
         # global nb_classes, X_train, X_test, y_train, y_test
         # get the categories according to the folder
         categories = os.listdir(self.adaptation_dtatset)
-        self.nb_classes = len(categories)
         # create matrix to store all images flatten
         img_matrix = []
         label = []
         for idx, category in enumerate(categories):
+            self.category.append(category)
             category_path = os.path.join(self.adaptation_dtatset, category)
             sub_folders = os.listdir(category_path)
             for sub_folder in sub_folders:
@@ -98,8 +103,8 @@ class CNN(object):
         # self.X_test /= 255
 
         # convert class vectore to binary class matrices
-        self.y_train = np_utils.to_categorical(y_train, self.nb_classes)
-        self.y_test = np_utils.to_categorical(y_test, self.nb_classes)
+        self.y_train = np_utils.to_categorical(y_train, len(self.category))
+        self.y_test = np_utils.to_categorical(y_test, len(self.category))
 
         # print('X_train shape: ', self.X_train.shape)
         # print(self.X_train.shape[0], 'train example')
@@ -134,7 +139,7 @@ class CNN(object):
         self.model.add(Activation('relu'))
         self.model.add(Dropout(0.5))
 
-        self.model.add(Dense(self.nb_classes))
+        self.model.add(Dense(len(self.category)))
         self.model.add(Activation(self.activation_function))
 
         # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
@@ -160,30 +165,29 @@ class CNN(object):
         # hist = model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch, verbose=1, validation_split=0.2)
         self.save(self.model_path)
 
-    def save(self, out_file):
+    def save(self):
         del self.X_train
         del self.X_test
         del self.y_train
         del self.y_test
-        self.model_path = out_file
-        self.model.save(out_file+'.h5')
+        self.model.save(self.model_path+'.h5')
         del self.model
-        with open(out_file+'.json', 'wb') as output:
+        with open(self.model_path+'.json', 'wb') as output:
             output.write(json.dumps(self.__dict__))
             # pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
 
-    def load(self, in_file):
-        with open(in_file+'.json', 'rb') as input:
+    def _load(self):
+        with open(self.model_path+'.json', 'rb') as input:
             # tmp = pickle.load(input)
             tmp = json.loads(input.read())
         self.__dict__ = tmp
-        self.model = load_model(in_file + '.h5')
+        self.model = load_model(self.model_path + '.h5')
 
     def predict(self, frame):
         frame = np.array(np.array(Image.open(frame)).flatten())
         frame = frame.reshape(1, self.nb_channel, self.img_rows, self.img_cols)
         pred = self.model.predict(frame, batch_size=1)
-        return 0 if pred[0][0] > pred[0][1] else 1
+        return self.category[0] if pred[0][0] > pred[0][1] else self.category[1]
 
     def get_random_frame(self):
         categories = os.listdir(self.adaptation_dtatset)
