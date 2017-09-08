@@ -5,7 +5,7 @@ window.onload = function (){
         el: '#app_control',
         data: {
             title: 'jjjdlkjf',
-            models :[],
+            models :{},
             mode: 'start',
             selected_model:'',
             work_header:'',
@@ -34,7 +34,9 @@ window.onload = function (){
             this.reset();
         },
         watch:{
-            models:function(){},
+            models:function(value){
+                this.models = value;
+            },
             predict_result: function(value){
                 this.predict_result = value;
                 // console.log(value)
@@ -56,6 +58,7 @@ window.onload = function (){
                 this.mode = 'model_details';
                 this.work_header = 'Model Details';
                 this.selected_model = model;
+                // this.build_history_view();
                 // this.models[this.selected_model].tp = 50;
                 // this.models[this.selected_model].tn = 50;
                 // this.models[this.selected_model].fn = 0;
@@ -69,7 +72,8 @@ window.onload = function (){
                 alert('delete!!!')
             },
             train_model: function () {
-                alert('train!!!')
+                // alert('train!!!')
+
             },
             predict_model: function () {
                 this.mode = 'model_predict';
@@ -87,14 +91,15 @@ window.onload = function (){
                 var vm = this;
                 $.post('/add_model',{
                     'model_name': model_name,
-                    'img_rows': img_rows,
-                    'img_cols': img_cols,
-                    'epoch': epoch,
-                    'kernel_size': kernel_size,
-                    'pool_size': pool_size,
+                    'img_rows': parseInt(img_rows),
+                    'img_cols': parseInt(img_cols),
+                    'epoch': parseInt(epoch),
+                    'kernel_size': parseInt(kernel_size),
+                    'pool_size': parseInt(pool_size),
                 },function(data,status){
                     if(status=="success"){
-                        models.append(model_name);
+                        // models[model_name] = ;
+                        vm.get_models();
                         vm.$refs['model_name'].value = '';
                     }
                     else{
@@ -149,21 +154,29 @@ window.onload = function (){
                   }
                 });
             },
+            getLatestInfo: function () {
+                var m = this.models[this.selected_model];
+                var arr = m.hist[m.hist.length-1];
+                if (arr == undefined){
+                    return {tp:0, tn:0, fp:0, fn:0};
+                }
+                return {tp:arr[0], tn:arr[1], fp:arr[2], fn:arr[3]};
+            },
             total_population: function () {
-                var m = this.models[this.selected_model]
+                var m = this.getLatestInfo();
                 return (m.tp + m.tn + m.fp + m.fn);
             },
             true_positive: function () {
-                return this.models[this.selected_model].tp
+                return this.getLatestInfo().tp
             },
             true_negative: function () {
-                return this.models[this.selected_model].tn
+                return this.getLatestInfo().tn
             },
             false_positive: function () {
-                return this.models[this.selected_model].fp
+                return this.getLatestInfo().fp
             },
             false_negative: function () {
-                return this.models[this.selected_model].fn
+                return this.getLatestInfo().fn
             },
             prevalence: function () {
                 var tot_pos = this.true_negative() + this.false_positive();
@@ -217,6 +230,23 @@ window.onload = function (){
             score: function () {
                 // return (2*((this.tpr()*this.precision())/(this.tpr()+this.precision()))).toFixed(2);
                 return ((2/((1/this.tpr())+(1/this.precision())))/100).toFixed(2);
+            },
+            build_history_view: function () {
+                var trace1 = {
+                  x: [1, 2, 3, 4],
+                  y: [10, 15, 13, 17],
+                  type: 'scatter'
+                };
+
+                var trace2 = {
+                  x: [1, 2, 3, 4],
+                  y: [16, 5, 11, 9],
+                  type: 'scatter'
+                };
+
+                var data = [trace1, trace2];
+
+                Plotly.newPlot('history', data);
             }
         }
     });

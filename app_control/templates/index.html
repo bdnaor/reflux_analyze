@@ -4,6 +4,7 @@
         <script type="text/javascript" src="static/js/jquery-3.2.1.js"></script>
         <script type="text/javascript" src="static/index.js"></script>
         <script src="static/js/vue.js"></script>
+        <script src="static/js/plotly-latest.min.js"></script>
         <title>Reflux Analyzer</title>
 	</head>
 	<body>
@@ -20,12 +21,12 @@
                         <button @click="predict_model">predict</button>
                     </p>
 
-                    <template ref="models_names">
+                    <!--<template ref="models_names">-->
                         <!--@click="select_model(model)"-->
-                    <p v-for="model in Object.keys(models)"
-                       v-bind:class="['model', { selected: selected_model == model}]"
-                       v-on:click="show_details(model)"
-                       v-bind:ref="model">{{ model }}</p>
+                    <template v-for="model in Object.keys(models)">
+                        <p v-bind:class="['model', { selected: selected_model == model}]"
+                           v-on:click="show_details(model)"
+                           v-bind:ref="model">{{ model }}</p>
                     </template>
                 </div>
 
@@ -111,6 +112,8 @@
                                 </tbody></table>
 
                         </div>
+                        <button @click="build_history_view()">show history</button>
+                        <div id="history"></div>
                     </div>
 
 

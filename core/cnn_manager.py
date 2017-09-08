@@ -23,11 +23,11 @@ class CNNManager(object):
             cnn = CNN({'model_name': i}, True)
             self.models[i] = cnn
 
-    def add_model(self, cnn, model_name):
-        if model_name in self.models.keys():
+    def add_model(self, cnn):
+        if cnn.model_name in self.models.keys():
             return False, 'Model name already exist'
         cnn.save()
-        self.models[model_name] = cnn
+        self.models[cnn.model_name] = cnn
         return True, 'ok'
 
     def remove_model(self, model_name):

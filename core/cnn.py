@@ -15,6 +15,7 @@ from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.models import Sequential, save_model, load_model
 
 from manage import ROOT_DIR
+from utils.prepare_dataset import reshape_images
 
 
 class CNN(object):
@@ -23,43 +24,58 @@ class CNN(object):
         self.model_path = os.path.join(ROOT_DIR, 'cnn_models', self.model_name)
         # the original data set
         self.input_dataset_path = 'dataset'
-        # the data set after resize
-        self.adaptation_dtatset = os.path.join(ROOT_DIR, self.input_dataset_path +'_' +self.model_name +'_adaptation')
         # the deep learning model
         self.model = None
 
         if reload:
             self._load()
+            # the data set after resize
+            self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
+            self.load_data_set()
         else:
-            self.img_rows = params.get('img_rows', 200)
-            self.img_cols = params.get('img_cols', 200)
-            self.nb_channel = params.get('nb_channel', 3)
-            self.batch_size = params.get('batch_size', 32)
-            self.epoch = params.get('epoch', 5)
+            self.img_rows = int(params.get('img_rows', 200))
+            self.img_cols = int(params.get('img_cols', 200))
+            self.nb_channel = int(params.get('nb_channel', 3))
+            self.batch_size = int(params.get('batch_size', 32))
+            self.epoch = int(params.get('epoch', 5))
             # number of convolution filter to use
-            self.nb_filters = params.get('nb_filters', 32)
+            self.nb_filters = int(params.get('nb_filters', 32))
+
             # size of pooling area for max pooling
-            pool_size = params.get('pool_size', 2)
-            self.pool_size = (pool_size, pool_size)
+            self.pool_size = params.get('pool_size', (2, 2))
+            if isinstance(self.pool_size, unicode):
+                self.pool_size = int(self.pool_size)
+            if isinstance(self.pool_size, int):
+                self.pool_size = (self.pool_size, self.pool_size)
+
             # convolution kernel size
-            self.kernel_size = params.get('kernel_size', 3)
+            self.kernel_size = params.get('kernel_size', (3, 3))
+            if isinstance(self.kernel_size, unicode):
+                self.kernel_size = int(self.kernel_size)
+            if isinstance(self.kernel_size, int):
+                self.kernel_size = (self.kernel_size, self.kernel_size)
+
             self.dropout = params.get('dropout', 0.25)
-            self.activation_function = params.get('activation_function','softmax')  # 'sigmoid'
-            self._build_model()
+            self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
             self.res = []
+            # History of the training
+            self.hist = None
+            self.category = []
 
-        # History of the training
-        self.hist = None
-        self.category = []
+            # the data set after resize
+            self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
+            # create adaption dataset if not exist
+            if not os.path.exists(self.adaptation_dataset):
+                reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
 
-        # the data set for train and validation
-        self.X_train = None
-        self.X_test = None
-        self.y_train = None
-        self.y_test = None
+            # the data set for train and validation
+            self.X_train = None
+            self.X_test = None
+            self.y_train = None
+            self.y_test = None
 
-        self.load_data_set()
-
+            self.load_data_set()
+            self._build_model()
 
     def load_data_set(self):
         '''
@@ -69,16 +85,15 @@ class CNN(object):
 
         # global nb_classes, X_train, X_test, y_train, y_test
         # get the categories according to the folder
-        categories = os.listdir(self.adaptation_dtatset)
+        self.category = os.listdir(self.adaptation_dataset)
         # create matrix to store all images flatten
         img_matrix = []
         label = []
-        for idx, category in enumerate(categories):
-            self.category.append(category)
-            category_path = os.path.join(self.adaptation_dtatset, category)
+        for idx, category in enumerate( self.category):
+            category_path = os.path.join(self.adaptation_dataset, category)
             sub_folders = os.listdir(category_path)
             for sub_folder in sub_folders:
-                case_folder_path = os.path.join(self.adaptation_dtatset, category, sub_folder)
+                case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
                 images = os.listdir(case_folder_path)
                 for im in images:
                     im_path = os.path.join(case_folder_path, im)
@@ -89,8 +104,8 @@ class CNN(object):
         label = np.array(label)
 
         # random_state for psudo random
-        data, label = shuffle(img_matrix, label, random_state=2) #random_state=2
-        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=2)
+        data, label = shuffle(img_matrix, label, random_state=7) #random_state=2
+        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=7)
 
         # reshape the data
         X_train = X_train.reshape(X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
@@ -153,7 +168,7 @@ class CNN(object):
         tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
         self.res.append([tn, tp, fn, tp])
         # print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
-        self.save()
+        self.save(only_json=True)
 
     def train_model(self, n_epoch=None):
         '''
@@ -164,7 +179,8 @@ class CNN(object):
         if self.X_train is None:
             self.load_data_set()
 
-        check_pointer = ModelCheckpoint(filepath=self.model_path + '.h5', verbose=1, save_best_only=True)
+        check_pointer_best = ModelCheckpoint(filepath=self.model_path + '.h5(best)', verbose=1, save_best_only=True)
+        check_pointer = ModelCheckpoint(filepath=self.model_path + '.h5', verbose=1)
         _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
         self.hist = self.model.fit(self.X_train,
                                    self.y_train,
@@ -172,27 +188,27 @@ class CNN(object):
                                    epochs=n_epoch,
                                    verbose=1,
                                    validation_data=(self.X_test, self.y_test),
-                                   callbacks=[check_pointer, _confusion_matrix])  # validation_split=0.2
-        # self.save()
+                                   callbacks=[check_pointer_best, check_pointer, _confusion_matrix])  # validation_split=0.2
 
-    def save(self):
-        del self.X_train
-        del self.X_test
-        del self.y_train
-        del self.y_test
-        # save_model(self.model, self.model_path+'.h5')
-        self.model.save(self.model_path +'.h5')
-        del self.model
+        # load to self.model the best model
+        self._load()
+
+    def save(self, only_json=False):
+        if not only_json:
+            self.model.save(self.model_path +'.h5')
+        save_dict = {"category": self.category, "nb_channel": self.nb_channel, "activation_function": self.activation_function, "dropout": self.dropout, "nb_filters": self.nb_filters, "pool_size": self.pool_size, "hist": self.hist, "img_cols": self.img_cols, "batch_size": self.batch_size, "res": self.res, "img_rows": self.img_rows, "model_name": self.model_name, "kernel_size": self.kernel_size}
         with open(self.model_path+'.json', 'wb') as output:
-            output.write(json.dumps(self.__dict__))
-            # pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+            output.write(json.dumps(save_dict))
 
     def _load(self):
         with open(self.model_path+'.json', 'rb') as input:
             # tmp = pickle.load(input)
             tmp = json.loads(input.read())
-        self.__dict__ = tmp
-        self.model = load_model(self.model_path + '.h5')
+        self.__dict__.update(tmp)
+        if os.path.exists(self.model_path + '.h5(best)'):
+            self.model = load_model(self.model_path + '.h5(best)')
+        else:
+            self.model = load_model(self.model_path + '.h5')
 
     def predict(self, frame):
         frame = np.array(np.array(Image.open(frame)).flatten())
@@ -201,9 +217,9 @@ class CNN(object):
         return self.category[0] if pred[0][0] > pred[0][1] else self.category[1]
 
     def get_random_frame(self):
-        categories = os.listdir(self.adaptation_dtatset)
+        categories = os.listdir(self.adaptation_dataset)
         category = randint(0, len(self.category))
-        category_path = os.path.join(self.adaptation_dtatset, categories[category])
+        category_path = os.path.join(self.adaptation_dataset, categories[category])
         cases = os.listdir(category_path)
         case_index = randint(0, len(cases)-1)
         frames = os.listdir(os.path.join(category_path, cases[case_index]))
@@ -217,9 +233,15 @@ class CNN(object):
             'img_cols': self.img_cols,
             'epoch': len(self.res),
             'pool_size': self.pool_size[0],
-            'kernel_size': self.kernel_size,
-            'tn': self.res[-1][0],
-            'tp': self.res[-1][1],
-            'fn': self.res[-1][2],
-            'fp': self.res[-1][3]
+            'kernel_size': self.kernel_size[0],
+            'hist': self.res,
         }
+
+    def create_model_svg(self):
+        # from IPython.display import SVG
+        from keras.utils.vis_utils import model_to_dot
+
+        # SVG(model_to_dot(model).create(prog='dot', format='svg'))
+        svg_res = model_to_dot(self.model).create(prog='dot', format='svg')
+        with open(self.model_path+'.svg','w') as _f:
+            _f.write(svg_res)

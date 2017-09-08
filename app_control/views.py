@@ -33,13 +33,13 @@ def get_models(request):
 @csrf_exempt
 def add_model(request):
     model_name = request.POST['model_name']
-    img_rows = int(request.POST['img_rows'])
-    img_cols = int(request.POST['img_cols'])
-    epoch = int(request.POST['epoch'])
-    kernel_size = int(request.POST['kernel_size'])
-    pool_size = int(request.POST['pool_size'])
-    cnn = CNN(img_rows=img_rows, img_cols=img_cols, epoch=epoch, pool_size=pool_size, kernel_size=kernel_size)
-    success, msg = cnn_manager.add_model(cnn, model_name)
+    # img_rows = int(request.POST['img_rows'])
+    # img_cols = int(request.POST['img_cols'])
+    # epoch = int(request.POST['epoch'])
+    # kernel_size = int(request.POST['kernel_size'])
+    # pool_size = int(request.POST['pool_size'])
+    cnn = CNN(request.POST)
+    success, msg = cnn_manager.add_model(cnn)
     if success:
         return Response({'msg': msg}, status=status.HTTP_200_OK)
     else:
