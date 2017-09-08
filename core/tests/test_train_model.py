@@ -5,7 +5,8 @@ from core.cnn import CNN
 
 class TestTrainModel(TestCase):
     def test_train_model(self):
-        cnn = CNN({'model_name': 'second_model'}, True)
+        # cnn = CNN({'model_name': 'second_model', 'img_rows': 75, 'img_cols': 75})
+        cnn = CNN({'model_name': 'naor_first_model'},True)
         # cnn._calculate_confusion_matrix()
         # self.assertEqual(cnn.tp, 396)
         # self.assertEqual(cnn.tn, 970)

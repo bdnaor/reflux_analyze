@@ -116,6 +116,16 @@
                         <div id="history"></div>
                     </div>
 
+                    <div v-if="mode == 'train_model'" id="train_model">
+                        <template v-if="!atTrainig(selected_model)">
+                            <label>epoch</label><input type="text" ref="epoch_train"/>
+                            <button @click="start_train(selected_model)">start train</button>
+                        </template>
+                        <template v-else>
+                            Training progress:
+                            <progress v-bind:value="getDoneTrainEpoch(selected_model)" v-bind:max="getTotalTrainEpoch(selected_model)"></progress>
+                        </template>
+                    </div>
 
                     <div v-if="mode == 'model_predict'" id="model_predict" style="margin: 20;">
                         <h1 style="width: 100%;">Using Model: {{selected_model}}</h1>

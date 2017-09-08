@@ -3,8 +3,11 @@ import os
 import numpy as np
 
 from random import randint
+
+import time
 from keras.callbacks import ModelCheckpoint, LambdaCallback
 from keras.layers import Conv2D
+from keras.optimizers import SGD
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix
@@ -57,10 +60,13 @@ class CNN(object):
 
             self.dropout = params.get('dropout', 0.25)
             self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
-            self.res = []
+            self.con_mat_test = []
+            self.con_mat_train = []
             # History of the training
             self.hist = None
             self.category = []
+            self.total_train_epoch = 0
+            self.done_train_epoch = 0
 
             # the data set after resize
             self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
@@ -159,26 +165,31 @@ class CNN(object):
         self.model.add(Activation(self.activation_function))
 
         # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-
+        sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
         # binary_accuracy, categorical_accuracy
-        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])  # 'adam'
 
     def _calculate_confusion_matrix(self, epoch, logs):
+        # For test set
         y_pred = self.model.predict_classes(self.X_test)
         tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
-        self.res.append([tn, tp, fn, tp])
+        self.con_mat_test.append([tn, fp, fn, tp])
+        # For train set
+        y_pred = self.model.predict_classes(self.X_train)
+        tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
+        self.con_mat_train.append([tn, fp, fn, tp])
         # print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
+        self.done_train_epoch += 1
         self.save(only_json=True)
 
     def train_model(self, n_epoch=None):
         '''
             saves the model weights after each epoch if the validation loss decreased
         '''
-        if n_epoch is None:
-            n_epoch = self.epoch
         if self.X_train is None:
             self.load_data_set()
 
+        self.total_train_epoch = n_epoch
         check_pointer_best = ModelCheckpoint(filepath=self.model_path + '.h5(best)', verbose=1, save_best_only=True)
         check_pointer = ModelCheckpoint(filepath=self.model_path + '.h5', verbose=1)
         _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
@@ -193,10 +204,16 @@ class CNN(object):
         # load to self.model the best model
         self._load()
 
+    # def fake_train(self, n_epoch=None):
+    #     self.total_train_epoch = n_epoch
+    #     while n_epoch > 0:
+    #         time.sleep(10)
+    #         self.done_train_epoch += 1
+
     def save(self, only_json=False):
         if not only_json:
             self.model.save(self.model_path +'.h5')
-        save_dict = {"category": self.category, "nb_channel": self.nb_channel, "activation_function": self.activation_function, "dropout": self.dropout, "nb_filters": self.nb_filters, "pool_size": self.pool_size, "hist": self.hist, "img_cols": self.img_cols, "batch_size": self.batch_size, "res": self.res, "img_rows": self.img_rows, "model_name": self.model_name, "kernel_size": self.kernel_size}
+        save_dict = self.get_info()
         with open(self.model_path+'.json', 'wb') as output:
             output.write(json.dumps(save_dict))
 
@@ -229,12 +246,22 @@ class CNN(object):
 
     def get_info(self):
         return {
-            'img_rows': self.img_rows,
-            'img_cols': self.img_cols,
-            'epoch': len(self.res),
-            'pool_size': self.pool_size[0],
-            'kernel_size': self.kernel_size[0],
-            'hist': self.res,
+            "category": self.category,
+            "nb_channel": self.nb_channel,
+            "activation_function": self.activation_function,
+            "dropout": self.dropout,
+            "nb_filters": self.nb_filters,
+            "pool_size": self.pool_size,
+            "hist": self.hist,
+            "img_rows": self.img_rows,
+            "img_cols": self.img_cols,
+            "batch_size": self.batch_size,
+            "con_mat_train": self.con_mat_train,
+            "con_mat_test": self.con_mat_test,
+            "model_name": self.model_name,
+            "kernel_size": self.kernel_size,
+            "total_train_epoch": self.total_train_epoch,
+            "done_train_epoch": self.done_train_epoch,
         }
 
     def create_model_svg(self):

@@ -53,6 +53,7 @@ window.onload = function (){
                 $.get('/get_models', function(data){
                     vm.models = JSON.parse(data);
                 });
+                setTimeout(function(){ vm.get_models() }, 7000);
             },
             show_details: function(model){
                 this.mode = 'model_details';
@@ -73,7 +74,31 @@ window.onload = function (){
             },
             train_model: function () {
                 // alert('train!!!')
+                this.mode = 'train_model';
+                this.work_header = 'Train Model';
+            },
+            start_train: function (model) {
+                ep = this.$refs['epoch_train'].value;
+                $.post('/start_train',{'model_name':model, 'epoch': ep},function(){
+                    if(status=="success"){
 
+                    }
+                    else{
+                        // TODO: show error msg
+                    }
+                });
+            },
+            atTrainig: function (model) {
+                var m = this.models[model];
+                return m.total_train_epoch > m.done_train_epoch;
+            },
+            getTotalTrainEpoch: function (model) {
+                var m = this.models[model];
+                return m.total_train_epoch;
+            },
+            getDoneTrainEpoch: function (model) {
+                var m = this.models[model];
+                return m.done_train_epoch;
             },
             predict_model: function () {
                 this.mode = 'model_predict';
@@ -156,7 +181,7 @@ window.onload = function (){
             },
             getLatestInfo: function () {
                 var m = this.models[this.selected_model];
-                var arr = m.hist[m.hist.length-1];
+                var arr = m.con_mat_train[m.con_mat_train.length-1];
                 if (arr == undefined){
                     return {tp:0, tn:0, fp:0, fn:0};
                 }

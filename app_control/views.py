@@ -59,6 +59,16 @@ def predict_images(request, *args, **kwargs):
     return Response({'predictions': predictions}, status=status.HTTP_200_OK)
 
 
+@api_view(['GET', 'POST', ])
+@csrf_exempt
+def start_train(request):
+    if request.method == 'POST':
+        model_name = request.POST['model_name']
+        epoch = int(request.POST['epoch'])
+        cnn = cnn_manager.models[model_name]
+        # cnn.fake_train(epoch)
+        cnn.train_model(epoch)
+
 # class FileFieldForm(forms.Form):
 #     file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
 #
