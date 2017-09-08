@@ -39,7 +39,7 @@ body{
     margin: 0px auto;
     margin-left: 50px;
     color: white;
-    font-size: 35;
+    font-size: 35px;
 }
 .model{
     margin-top:0px;
@@ -102,14 +102,8 @@ textarea{*/
 }
 
 .dropbox:hover {
-    bottom:;ackground: lightblue; /* when mouse over to the drop zone, change color */
-}
-
-.dropbox p {
-    font-size: 1.2em;
-    text-align: center;
-    padding: 50px 0;
-}
+    background: lightblue; /* when mouse over to the drop zone, change color */
+  }
 .negative{
     border: 3px solid green;
     border-radius: 5px;

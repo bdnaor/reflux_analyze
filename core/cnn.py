@@ -26,7 +26,7 @@ class CNN(object):
         self.model_name = params['model_name']
         self.model_path = os.path.join(ROOT_DIR, 'cnn_models', self.model_name)
         # the original data set
-        self.input_dataset_path = 'dataset'
+        self.input_dataset_path = os.path.join(ROOT_DIR, 'dataset')
         # the deep learning model
         self.model = None
 
