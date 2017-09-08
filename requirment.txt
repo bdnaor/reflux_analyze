@@ -8,6 +8,7 @@ Keras==2.0.8
 matplotlib==2.0.2
 numpy==1.13.1
 olefile==0.44
+opencv-python==3.3.0.10
 Pillow==4.2.1
 pydot==1.2.3
 pyparsing==2.2.0

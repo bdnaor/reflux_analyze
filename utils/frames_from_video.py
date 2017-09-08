@@ -27,8 +27,8 @@ def cut_image(img_src, img_dest):
 
 
 if __name__ == "__main__":
-    video_dir = os.path.join('N:\\', 'workspace', 'reflux_analyze', 'video')
-    img_dir = os.path.join('N:\\', 'workspace', 'reflux_analyze', 'images')
+    video_dir = os.path.join('/home', 'naor', 'Desktop', 'workspace', 'reflux_analyze', 'video')
+    img_dir = os.path.join('/home', 'naor', 'Desktop', 'workspace', 'reflux_analyze', 'images')
     # for filename in os.listdir(video_dir):
     #     name, ex = filename.split('.')
     #     if ex.lower() == 'mp4':
@@ -37,12 +37,16 @@ if __name__ == "__main__":
     #             os.makedirs(out_dir)
     #         video_path = os.path.join(video_dir, filename)
     #         extract_frames(video_path, out_dir)
+    video_name = '003'
+    video_path = os.path.join(video_dir, '%s.MP4' % video_name)
+    out_dir = os.path.join(img_dir, video_name)
+    extract_frames(video_path, out_dir)
 
-    for folder_name in os.listdir(img_dir):
-        for img in os.listdir(os.path.join(img_dir, folder_name)):
-            try:
-                img_path = os.path.join(img_dir, folder_name, img)
-                cut_image(img_path, img_path)
-            except Exception as e:
-                print str(e)
-                pass
+    # for folder_name in os.listdir(img_dir):
+    #     for img in os.listdir(os.path.join(img_dir, folder_name)):
+    #         try:
+    #             img_path = os.path.join(img_dir, folder_name, img)
+    #             cut_image(img_path, img_path)
+    #         except Exception as e:
+    #             print str(e)
+    #             pass
