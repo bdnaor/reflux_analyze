@@ -1,12 +1,14 @@
 import json
 import os
+
+import gc
 import numpy as np
 
 from random import randint
 
 import time
 from keras.callbacks import ModelCheckpoint, LambdaCallback
-from keras.layers import Conv2D
+from keras.layers import Conv2D, Convolution2D
 from keras.optimizers import SGD
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
@@ -32,9 +34,6 @@ class CNN(object):
 
         if reload:
             self._load()
-            # the data set after resize
-            self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
-            self.load_data_set()
         else:
             self.img_rows = int(params.get('img_rows', 200))
             self.img_cols = int(params.get('img_cols', 200))
@@ -68,27 +67,24 @@ class CNN(object):
             self.total_train_epoch = 0
             self.done_train_epoch = 0
 
-            # the data set after resize
-            self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
-            # create adaption dataset if not exist
-            if not os.path.exists(self.adaptation_dataset):
-                reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
-
             # the data set for train and validation
             self.X_train = None
             self.X_test = None
             self.y_train = None
             self.y_test = None
 
-            self.load_data_set()
-            self._build_model()
+            self._build_model_2()
 
     def load_data_set(self):
         '''
         this method initialize the (X_train,y_train)(X_val, y_val) where X is the data and y is the label
         :return:
         '''
-
+        # the data set after resize
+        self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
+        # create adaption dataset if not exist
+        if not os.path.exists(self.adaptation_dataset):
+            reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
         # global nb_classes, X_train, X_test, y_train, y_test
         # get the categories according to the folder
         self.category = os.listdir(self.adaptation_dataset)
@@ -109,49 +105,52 @@ class CNN(object):
         img_matrix = np.array(img_matrix)
         label = np.array(label)
 
+        del images
+
+        gc.collect()
         # random_state for psudo random
+        # the data set load, shuffled and split between train and validation sets
         data, label = shuffle(img_matrix, label, random_state=7) #random_state=2
-        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.2, random_state=7)
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, label, test_size=0.2, random_state=7)
 
         # reshape the data
-        X_train = X_train.reshape(X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
-        X_test = X_test.reshape(X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+        self.X_train = self.X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+        self.X_test = self.X_test.reshape(self.X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
 
-        self.X_train = X_train.astype('float32')
-        self.X_test = X_test.astype('float32')
+        self.X_train = self.X_train.astype('float32')
+        self.X_test = self.X_test.astype('float32')
 
         # help for faster convert
-        # self.X_train /= 255
-        # self.X_test /= 255
+        self.X_train /= 255
+        self.X_test /= 255
 
         # convert class vectore to binary class matrices
-        self.y_train = np_utils.to_categorical(y_train, len(self.category))
-        self.y_test = np_utils.to_categorical(y_test, len(self.category))
+        self.y_train = np_utils.to_categorical(self.y_train, len(self.category))
+        self.y_test = np_utils.to_categorical(self.y_test, len(self.category))
 
         # print('X_train shape: ', self.X_train.shape)
         # print(self.X_train.shape[0], 'train example')
         # print(self.X_test.shape[0], 'validation example')
 
     def _build_model(self):
-        # the data set load, shuffled and split between train and validation sets
         self.model = Sequential()
 
         # Layer 1
         self.model.add(Conv2D(filters=self.nb_filters,
                               kernel_size=self.kernel_size,
-                              padding='valid',
+                              padding='same',
                               input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
 
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 2
-        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='valid'))
+        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 3
-        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='valid'))
+        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
@@ -169,13 +168,50 @@ class CNN(object):
         # binary_accuracy, categorical_accuracy
         self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])  # 'adam'
 
-    def _calculate_confusion_matrix(self, epoch, logs):
+    def _build_model_2(self):
+        # the data set load, shuffled and split between train and validation sets
+        self.model = Sequential()
+
+        # Layer 1
+        self.model.add(Convolution2D(self.nb_filters, self.kernel_size, border_mode='valid',
+                                input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
+
+        self.model.add(Activation('relu'))
+        self.model.add(MaxPooling2D(pool_size=self.pool_size))
+
+        # Layer 2
+        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))
+        self.model.add(Activation('relu'))
+        self.model.add(MaxPooling2D(pool_size=self.pool_size))
+
+        # Layer 3
+        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))
+        self.model.add(Activation('relu'))
+        self.model.add(MaxPooling2D(pool_size=self.pool_size))
+
+        self.model.add(Dropout(0.25))
+        self.model.add(Flatten())
+        self.model.add(Dense(64))
+        self.model.add(Activation('relu'))
+        self.model.add(Dropout(0.5))
+
+        self.model.add(Dense(len(self.category)))
+        self.model.add(Activation('softmax'))  # 'sigmoid'
+
+        # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
+
+        # binary_accuracy, categorical_accuracy
+        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    def _calculate_confusion_matrix(self, epoch=None, logs=None):
         # For test set
         y_pred = self.model.predict_classes(self.X_test)
+        # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
         tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
         self.con_mat_test.append([tn, fp, fn, tp])
         # For train set
         y_pred = self.model.predict_classes(self.X_train)
+        # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
         tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
         self.con_mat_train.append([tn, fp, fn, tp])
         # print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
@@ -257,7 +293,7 @@ class CNN(object):
             "img_cols": self.img_cols,
             "batch_size": self.batch_size,
             "con_mat_train": self.con_mat_train,
-            "con_mat_test": self.con_mat_test,
+            "con_mat_val": self.con_mat_test,
             "model_name": self.model_name,
             "kernel_size": self.kernel_size,
             "total_train_epoch": self.total_train_epoch,

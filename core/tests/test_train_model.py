@@ -5,9 +5,10 @@ from core.cnn import CNN
 
 class TestTrainModel(TestCase):
     def test_train_model(self):
-        cnn = CNN({'model_name': 'second_model', 'img_rows': 100, 'img_cols': 100})
-        # cnn = CNN({'model_name': 'naor_first_model'},True)
-        # cnn._calculate_confusion_matrix()
+        # cnn = CNN({'model_name': 'second_model', 'img_rows': 200, 'img_cols': 200})
+        # cnn = CNN({'model_name': 'second_model'}, True)
+        cnn = CNN({'model_name': 'naor_first_model'}, True)
+        cnn._calculate_confusion_matrix()
         # self.assertEqual(cnn.tp, 396)
         # self.assertEqual(cnn.tn, 970)
         # self.assertEqual(cnn.fp, 6)

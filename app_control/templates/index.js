@@ -183,9 +183,9 @@ window.onload = function (){
                 var m = this.models[this.selected_model];
                 var arr = m.con_mat_train[m.con_mat_train.length-1];
                 if (arr == undefined){
-                    return {tp:0, tn:0, fp:0, fn:0};
+                    return {tn:0, fp:0, fn:0, tp:0};
                 }
-                return {tp:arr[0], tn:arr[1], fp:arr[2], fn:arr[3]};
+                return {tn:arr[0], fp:arr[1], fn:arr[2], tp:arr[3]};
             },
             total_population: function () {
                 var m = this.getLatestInfo();
@@ -256,20 +256,32 @@ window.onload = function (){
                 // return (2*((this.tpr()*this.precision())/(this.tpr()+this.precision()))).toFixed(2);
                 return ((2/((1/this.tpr())+(1/this.precision())))/100).toFixed(2);
             },
+            getAccuracyDict: function (confusionList, name) {
+                var x_acc = [];
+                var y_acc = [];
+                for(var i=0; i<confusionList.length; i++){
+                    var arr = confusionList[i];
+                    var mat = {tn:arr[0], fp:arr[1], fn:arr[2], tp:arr[3]};
+                    x_acc.push(i);
+                    var tot_true = mat.tn + mat.tp;
+                    y_acc.push(((tot_true/(mat.tn+mat.fp+mat.fn+mat.tp))*100).toFixed(2));
+                }
+                 return {
+                    x: x_acc,
+                    y: y_acc,
+                    name: name,
+                    mode: "lines",
+                    type: 'scatter',
+
+                };
+            },
             build_history_view: function () {
-                var trace1 = {
-                  x: [1, 2, 3, 4],
-                  y: [10, 15, 13, 17],
-                  type: 'scatter'
-                };
 
-                var trace2 = {
-                  x: [1, 2, 3, 4],
-                  y: [16, 5, 11, 9],
-                  type: 'scatter'
-                };
+                var acc = this.getAccuracyDict(this.models[this.selected_model].con_mat_train, 'acc');
 
-                var data = [trace1, trace2];
+                var val_acc = this.getAccuracyDict(this.models[this.selected_model].con_mat_val, 'val_acc');
+
+                var data = [acc, val_acc];
 
                 Plotly.newPlot('history', data);
             }
