@@ -29,6 +29,12 @@ window.onload = function (){
             return this.currentStatus === STATUS_FAILED;
           }
         },
+        updated: function(){
+            if(this.mode == 'model_details'){
+                this.build_history_view();
+                this.init_accordion();
+            }
+        },
         mounted: function() {
             this.get_models();
             this.reset();
@@ -59,7 +65,6 @@ window.onload = function (){
                 this.mode = 'model_details';
                 this.work_header = 'Model Details';
                 this.selected_model = model;
-                // this.build_history_view();
                 // this.models[this.selected_model].tp = 50;
                 // this.models[this.selected_model].tn = 50;
                 // this.models[this.selected_model].fn = 0;
@@ -272,7 +277,6 @@ window.onload = function (){
                     name: name,
                     mode: "lines",
                     type: 'scatter',
-
                 };
             },
             build_history_view: function () {
@@ -284,6 +288,27 @@ window.onload = function (){
                 var data = [acc, val_acc];
 
                 Plotly.newPlot('history', data);
+
+            },
+            init_accordion: function () {
+                var acc = document.getElementsByClassName("accordion");
+                var i;
+
+                for (i = 0; i < acc.length; i++) {
+                    acc[i].onclick = function(){
+                        /* Toggle between adding and removing the "active" class,
+                        to highlight the button that controls the panel */
+                        this.classList.toggle("active");
+
+                        /* Toggle between hiding and showing the active panel */
+                        var panel = this.nextElementSibling;
+                        if (panel.style.display === "block") {
+                            panel.style.display = "none";
+                        } else {
+                            panel.style.display = "block";
+                        }
+                    }
+                }
             }
         }
     });

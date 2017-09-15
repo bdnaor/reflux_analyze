@@ -31,7 +31,7 @@
                 </div>
 
                 <div id="workspace">
-                    <h2 id="work_header"style="background-color:#8c8c8c">{{work_header}}</h2>
+                    <h2 id="work_header"style="background-color:#8c8c8c;margin-bottom: 0px;">{{work_header}}</h2>
 
                     <div v-if="mode == 'create_model'" id="onCreate">
                         <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
@@ -47,19 +47,19 @@
 
 
                     <div v-if="mode == 'model_details'" id="model_details">
-                        <div id="created_info" style="margin: 20;">
-                        <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
-                        <label><b><i>Crated Info: </i></b></label><br/>
-                        <span><label>Model Name: </label><input v-bind:value="selected_model" type="text" ref="model_name" size="35" disabled></span><br/>
-                        <span><label>Image Rows: </label><input v-bind:value="models[selected_model].img_rows" type="text" ref="img_rows" size="35" disabled></span><br/>
-                        <span><label>Image Columns: </label><input v-bind:value="models[selected_model].img_cols" type="text" ref="img_cols" size="35" disabled></span><br/>
-                        <!--<span><label>Image Color: </label><input type="text" ref="nb_channel" size="35"></span><br/>-->
-                        <span><label>Epoch: </label><input v-bind:value="models[selected_model].epoch" type="text" ref="epoch" size="35" disabled></span><br/>
-                        <span><label>Kernel Size: </label><input v-bind:value="models[selected_model].kernel_size" type="text" ref="kernel_size" size="35" disabled></span><br/>
-                        <span><label>Pool Size: </label><input v-bind:value="models[selected_model].pool_size" type="text" ref="pool_size" size="35" disabled></span><br/>
+                        <button class="accordion"><label><b><i>Created Info</i></b></label><br/></button>
+                        <div id="created_info" class="panel" style="margin: 20px;">
+                            <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
+                            <span><label>Model Name: </label><input v-bind:value="selected_model" type="text" ref="model_name" size="35" disabled></span><br/>
+                            <span><label>Image Rows: </label><input v-bind:value="models[selected_model].img_rows" type="text" ref="img_rows" size="35" disabled></span><br/>
+                            <span><label>Image Columns: </label><input v-bind:value="models[selected_model].img_cols" type="text" ref="img_cols" size="35" disabled></span><br/>
+                            <!--<span><label>Image Color: </label><input type="text" ref="nb_channel" size="35"></span><br/>-->
+                            <span><label>Epoch: </label><input v-bind:value="models[selected_model].epoch" type="text" ref="epoch" size="35" disabled></span><br/>
+                            <span><label>Kernel Size: </label><input v-bind:value="models[selected_model].kernel_size" type="text" ref="kernel_size" size="35" disabled></span><br/>
+                            <span><label>Pool Size: </label><input v-bind:value="models[selected_model].pool_size" type="text" ref="pool_size" size="35" disabled></span><br/>
                         </div>
-                        <div id="confusion_matrix" style="margin: 20;">
-                            <label><b><i>Confusion Matrix: </i></b></label><br/>
+                        <button class="accordion"><label><b><i>Confusion Matrix</i></b></label><br/></button>
+                        <div id="confusion_matrix" class="panel" style="margin: 20px;">
                             <table class="wikitable" align="center" style="text-align:center; border:none; background:transparent;">
                                 <tbody>
                                     <tr>
@@ -112,8 +112,9 @@
                                 </tbody></table>
 
                         </div>
-                        <button @click="build_history_view()">show history</button>
-                        <div id="history"></div>
+                        <!--<button @click="build_history_view()">show history</button>-->
+                        <button class="accordion"><label><b><i>History</i></b></label><br/></button>
+                        <div id="history" class="panel"></div>
                     </div>
 
                     <div v-if="mode == 'train_model'" id="train_model">

@@ -2,11 +2,14 @@ import json
 import os
 
 import gc
-import numpy as np
 
 from random import randint
 
 import time
+
+from cv2.cv2 import CV_64F
+import keras.backend as K
+import numpy as np
 from keras.callbacks import ModelCheckpoint, LambdaCallback
 from keras.layers import Conv2D, Convolution2D
 from keras.optimizers import SGD
@@ -18,6 +21,9 @@ from keras.utils import np_utils
 from keras.layers.convolutional import MaxPooling2D
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.models import Sequential, save_model, load_model
+# from skimage.filters import gabor_kernel
+import cv2
+from theano import shared
 
 from manage import ROOT_DIR
 from utils.prepare_dataset import reshape_images
@@ -31,7 +37,7 @@ class CNN(object):
         self.input_dataset_path = os.path.join(ROOT_DIR, 'dataset')
         # the deep learning model
         self.model = None
-
+        self.split_cases = True
         if reload:
             self._load()
         else:
@@ -57,9 +63,9 @@ class CNN(object):
             if isinstance(self.kernel_size, int):
                 self.kernel_size = (self.kernel_size, self.kernel_size)
 
-            self.dropout = params.get('dropout', 0.25)
+            self.dropout = params.get('dropout', 0.5)
             self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
-            self.con_mat_test = []
+            self.con_mat_val = []
             self.con_mat_train = []
             # History of the training
             self.hist = None
@@ -75,6 +81,75 @@ class CNN(object):
 
             self._build_model_2()
 
+        self.total_train_epoch = 0
+        self.done_train_epoch = 0
+
+    def load_data_set_split_cases(self):
+        # the data set after resize
+        self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(
+            self.img_cols) + '_adaptation')
+
+        # create adaption dataset if not exist
+        if not os.path.exists(self.adaptation_dataset):
+            reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
+        # global nb_classes, X_train, X_test, y_train, y_test
+        # get the categories according to the folder
+        self.category = os.listdir(self.adaptation_dataset)
+        # create matrix to store all images flatten
+        train_img_matrix = []
+        train_label = []
+        test_img_matrix = []
+        test_label = []
+        for idx, category in enumerate(self.category):
+            category_path = os.path.join(self.adaptation_dataset, category)
+            case_folder = os.listdir(category_path)
+            for sub_folder in case_folder[:int(len(case_folder)*0.5)]:
+                case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
+                images = os.listdir(case_folder_path)
+                for im in images:
+                    im_path = os.path.join(case_folder_path, im)
+                    test_img_matrix.append(np.array(np.array(Image.open(im_path)).flatten()))
+                    test_label.append(idx)
+            for sub_folder in case_folder[int(len(case_folder)*0.5):]:
+                case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
+                images = os.listdir(case_folder_path)
+                for im in images:
+                    im_path = os.path.join(case_folder_path, im)
+                    train_img_matrix.append(np.array(np.array(Image.open(im_path)).flatten()))
+                    train_label.append(idx)
+
+        train_img_matrix = np.array(train_img_matrix)
+        train_label = np.array(train_label)
+        test_img_matrix = np.array(test_img_matrix)
+        test_label = np.array(test_label)
+
+        del images
+        gc.collect()
+        # random_state for psudo random
+        # the data set load, shuffled and split between train and validation sets
+        train_img_matrix, train_label = shuffle(train_img_matrix, train_label, random_state=7)
+        test_img_matrix, test_label = shuffle(test_img_matrix, test_label, random_state=7)
+
+        self.X_train = train_img_matrix
+        self.y_train = train_label
+        self.X_test = test_img_matrix
+        self.y_test = test_label
+
+        # reshape the data
+        self.X_train = self.X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+        self.X_test = self.X_test.reshape(self.X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+
+        self.X_train = self.X_train.astype('float32')
+        self.X_test = self.X_test.astype('float32')
+
+        # help for faster convert
+        self.X_train /= 255
+        self.X_test /= 255
+
+        # convert class vectore to binary class matrices
+        self.y_train = np_utils.to_categorical(self.y_train, len(self.category))
+        self.y_test = np_utils.to_categorical(self.y_test, len(self.category))
+
     def load_data_set(self):
         '''
         this method initialize the (X_train,y_train)(X_val, y_val) where X is the data and y is the label
@@ -82,6 +157,7 @@ class CNN(object):
         '''
         # the data set after resize
         self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
+
         # create adaption dataset if not exist
         if not os.path.exists(self.adaptation_dataset):
             reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
@@ -91,7 +167,7 @@ class CNN(object):
         # create matrix to store all images flatten
         img_matrix = []
         label = []
-        for idx, category in enumerate( self.category):
+        for idx, category in enumerate(self.category):
             category_path = os.path.join(self.adaptation_dataset, category)
             sub_folders = os.listdir(category_path)
             for sub_folder in sub_folders:
@@ -169,33 +245,46 @@ class CNN(object):
         self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])  # 'adam'
 
     def _build_model_2(self):
+        # def custom_gabor(shape, dtype=None):
+        #     total_ker = []
+        #     for i in xrange(shape[3]):
+        #         kernals = []
+        #         for j in xrange(shape[2]):
+        #             kernals.append(cv2.getGaborKernel(ksize=(shape[0], shape[1]), sigma=1, theta=1, lambd=0.5, gamma=0.3, psi=(3.14)*0.5, ktype=CV_64F))
+        #         total_ker.append(kernals)
+        #     np_tot = shared(np.array(total_ker))
+        #     return K.variable(np_tot, dtype=dtype)
+
+
+
         # the data set load, shuffled and split between train and validation sets
         self.model = Sequential()
 
         # Layer 1
-        self.model.add(Convolution2D(self.nb_filters, self.kernel_size, border_mode='valid',
-                                input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
+        self.model.add(Convolution2D(self.nb_filters, self.kernel_size,
+                                     # kernel_initializer=custom_gabor,
+                                     input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
 
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 2
-        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))
+        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))  # kernel_initializer=custom_gabor))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 3
-        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))
+        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))  # , kernel_initializer=custom_gabor,))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
-        self.model.add(Dropout(0.25))
+        self.model.add(Dropout(0.5))
         self.model.add(Flatten())
         self.model.add(Dense(64))
         self.model.add(Activation('relu'))
         self.model.add(Dropout(0.5))
 
-        self.model.add(Dense(len(self.category)))
+        self.model.add(Dense(2))  # len(self.category)
         self.model.add(Activation('softmax'))  # 'sigmoid'
 
         # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
@@ -208,7 +297,7 @@ class CNN(object):
         y_pred = self.model.predict_classes(self.X_test)
         # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
         tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
-        self.con_mat_test.append([tn, fp, fn, tp])
+        self.con_mat_val.append([tn, fp, fn, tp])
         # For train set
         y_pred = self.model.predict_classes(self.X_train)
         # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
@@ -222,8 +311,11 @@ class CNN(object):
         '''
             saves the model weights after each epoch if the validation loss decreased
         '''
-        if self.X_train is None:
-            self.load_data_set()
+        if not hasattr(self, 'X_train') or self.X_train is None:
+            if self.split_cases:
+                self.load_data_set_split_cases()
+            else:
+                self.load_data_set()
 
         self.total_train_epoch = n_epoch
         check_pointer_best = ModelCheckpoint(filepath=self.model_path + '.h5(best)', verbose=1, save_best_only=True)
@@ -293,7 +385,7 @@ class CNN(object):
             "img_cols": self.img_cols,
             "batch_size": self.batch_size,
             "con_mat_train": self.con_mat_train,
-            "con_mat_val": self.con_mat_test,
+            "con_mat_val": self.con_mat_val,
             "model_name": self.model_name,
             "kernel_size": self.kernel_size,
             "total_train_epoch": self.total_train_epoch,

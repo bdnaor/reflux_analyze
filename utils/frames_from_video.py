@@ -37,7 +37,7 @@ if __name__ == "__main__":
     #             os.makedirs(out_dir)
     #         video_path = os.path.join(video_dir, filename)
     #         extract_frames(video_path, out_dir)
-    video_name = '003'
+    video_name = '123'
     video_path = os.path.join(video_dir, '%s.MP4' % video_name)
     out_dir = os.path.join(img_dir, video_name)
     extract_frames(video_path, out_dir)
