@@ -29,6 +29,13 @@ from manage import ROOT_DIR
 from utils.prepare_dataset import reshape_images
 
 
+def calculate_score(confusion_matrix):
+    tn, fp, fn, tp = confusion_matrix
+    _recall = float(tp) / (tp + fn)
+    _precision = float(tp) / (tp+fp)
+    return float(2) / ((float(1) / _recall) + (float(1) / _precision))
+
+
 class CNN(object):
     def __init__(self, params, reload=False):
         self.model_name = params['model_name']
@@ -245,24 +252,25 @@ class CNN(object):
         self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])  # 'adam'
 
     def _build_model_2(self):
-        # def custom_gabor(shape, dtype=None):
-        #     total_ker = []
-        #     for i in xrange(shape[0]):
-        #         kernels = []
-        #         for j in xrange(shape[1]):
-        #             # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
-        #             tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]), sigma=1, theta=1, lambd=0.5, gamma=0.3,
-        #                                             psi=(3.14) * 0.5,
-        #                                             ktype=CV_64F)
-        #             filter = []
-        #             for row in tmp_filter:
-        #                 filter.append(np.delete(row, -1))
-        #             kernels.append(filter)
-        #             # gk.real
-        #         total_ker.append(kernels)
-        #     np_tot = shared(np.array(total_ker))
-        #     return K.variable(np_tot, dtype=dtype)
+        def custom_gabor(shape, dtype=None):
+            total_ker = []
+            for i in xrange(shape[0]):
+                kernels = []
+                for j in xrange(shape[1]):
+                    # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
+                    tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]), sigma=1, theta=1, lambd=0.5, gamma=0.3,
+                                                    psi=(3.14) * 0.5,
+                                                    ktype=CV_64F)
+                    filter = []
+                    for row in tmp_filter:
+                        filter.append(np.delete(row, -1))
+                    kernels.append(filter)
+                    # gk.real
+                total_ker.append(kernels)
+            np_tot = shared(np.array(total_ker))
+            return K.variable(np_tot, dtype=dtype)
 
+        self.with_gabor = True
 
 
         # the data set load, shuffled and split between train and validation sets
@@ -270,7 +278,7 @@ class CNN(object):
 
         # Layer 1
         self.model.add(Convolution2D(self.nb_filters, self.kernel_size,
-                                     # kernel_initializer=custom_gabor,
+                                     kernel_initializer=custom_gabor,
                                      input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
 
         self.model.add(Activation('relu'))
@@ -300,20 +308,35 @@ class CNN(object):
         # binary_accuracy, categorical_accuracy
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+    def save_only_best(self, epoch=None, logs=None):
+        scores = [calculate_score(item) for item in self.con_mat_val]
+        last_biggest = True
+        for i in xrange(len(scores)):
+            if scores[i] > scores[-1]:
+                last_biggest = False
+                break
+        if last_biggest:
+            print 'find best model and save it.'
+            self.save()
+
     def _calculate_confusion_matrix(self, epoch=None, logs=None):
         # For test set
         y_pred = self.model.predict_classes(self.X_test)
         # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
         tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
         self.con_mat_val.append([tn, fp, fn, tp])
+
         # For train set
         y_pred = self.model.predict_classes(self.X_train)
         # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
         tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
         self.con_mat_train.append([tn, fp, fn, tp])
+
         # print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
         self.done_train_epoch += 1
-        self.save(only_json=True)
+        # self.save(only_json=True)
+
+
 
     def train_model(self, n_epoch=None):
         '''
@@ -326,39 +349,39 @@ class CNN(object):
                 self.load_data_set()
 
         self.total_train_epoch = n_epoch
-        check_pointer_best = ModelCheckpoint(filepath=self.model_path + '.h5(best)', verbose=1, save_best_only=True)
-        check_pointer = ModelCheckpoint(filepath=self.model_path + '.h5', verbose=1)
+        # check_pointer_best = ModelCheckpoint(filepath=self.model_path + '.h5(best)', verbose=1, save_best_only=True)
+        # check_pointer = ModelCheckpoint(filepath=self.model_path + '.h5', verbose=1)
         _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
+        _save_only_best = LambdaCallback(on_epoch_end=lambda epoch, logs: self.save_only_best(epoch, logs))
         self.hist = self.model.fit(self.X_train,
                                    self.y_train,
                                    batch_size=self.batch_size,
                                    epochs=n_epoch,
                                    verbose=1,
                                    validation_data=(self.X_test, self.y_test),
-                                   callbacks=[check_pointer_best, check_pointer, _confusion_matrix])  # validation_split=0.2
+                                   callbacks=[_confusion_matrix, _save_only_best])  # check_pointer, check_pointer_best
 
         # load to self.model the best model
         self._load()
 
-    # def fake_train(self, n_epoch=None):
-    #     self.total_train_epoch = n_epoch
-    #     while n_epoch > 0:
-    #         time.sleep(10)
-    #         self.done_train_epoch += 1
-
     def save(self, only_json=False):
-        if not only_json:
-            self.model.save(self.model_path +'.h5')
+        if self.with_gabor:
+            self.model.save_weights(self.model_path + '.h5(weights)')
+        elif not only_json:
+            self.model.save(self.model_path + '.h5')
         save_dict = self.get_info()
         with open(self.model_path+'.json', 'wb') as output:
             output.write(json.dumps(save_dict))
 
     def _load(self):
-        with open(self.model_path+'.json', 'rb') as input:
+        with open(self.model_path+'.json', 'rb') as _input:
             # tmp = pickle.load(input)
-            tmp = json.loads(input.read())
+            tmp = json.loads(_input.read())
         self.__dict__.update(tmp)
-        if os.path.exists(self.model_path + '.h5(best)'):
+        if self.with_gabor:
+            self._build_model_2()
+            self.model.load_weights(self.model_path + '.h5(weights)')
+        elif os.path.exists(self.model_path + '.h5(best)'):
             self.model = load_model(self.model_path + '.h5(best)')
         else:
             self.model = load_model(self.model_path + '.h5')
@@ -401,6 +424,7 @@ class CNN(object):
             "kernel_size": self.kernel_size,
             "total_train_epoch": self.total_train_epoch,
             "done_train_epoch": self.done_train_epoch,
+            "with_gabor": self.with_gabor
         }
 
     def create_model_svg(self):
