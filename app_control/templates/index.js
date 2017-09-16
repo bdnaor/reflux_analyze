@@ -65,10 +65,6 @@ window.onload = function (){
                 this.mode = 'model_details';
                 this.work_header = 'Model Details';
                 this.selected_model = model;
-                // this.models[this.selected_model].tp = 50;
-                // this.models[this.selected_model].tn = 50;
-                // this.models[this.selected_model].fn = 0;
-                // this.models[this.selected_model].fp = 0;
             },
             create_model: function () {
                 this.mode = 'create_model';
@@ -78,18 +74,18 @@ window.onload = function (){
                 alert('delete!!!')
             },
             train_model: function () {
-                // alert('train!!!')
                 this.mode = 'train_model';
                 this.work_header = 'Train Model';
             },
             start_train: function (model) {
+                vm = this;
                 ep = this.$refs['epoch_train'].value;
                 $.post('/start_train',{'model_name':model, 'epoch': ep},function(){
                     if(status=="success"){
 
                     }
                     else{
-                        // TODO: show error msg
+                        vm.openDialog('Fail start train');
                     }
                 });
             },
@@ -108,6 +104,7 @@ window.onload = function (){
             predict_model: function () {
                 this.mode = 'model_predict';
                 this.work_header = 'Predict Image';
+                $('.plot-container').remove();
             },
             post_create: function () {
                 var model_name = this.$refs['model_name'].value;
@@ -117,7 +114,7 @@ window.onload = function (){
                 var kernel_size = this.$refs['kernel_size'].value;
                 var pool_size = this.$refs['pool_size'].value;
 
-                // TODO: add validation and show error msg.
+                // TODO: add validation.
                 var vm = this;
                 $.post('/add_model',{
                     'model_name': model_name,
@@ -133,7 +130,7 @@ window.onload = function (){
                         vm.$refs['model_name'].value = '';
                     }
                     else{
-                        // TODO: show error msg
+                        vm.openDialog(data.msg);
                     }
                 })
             },
@@ -147,7 +144,7 @@ window.onload = function (){
                 var fd = new FormData();
                 var vm = this; // Keep reference to viewmodel object
 
-                var fileDict = {}
+                var fileDict = {};
                 if (!fileList.length) return;
 
                  // append the files to FormData
@@ -181,85 +178,94 @@ window.onload = function (){
                       }
                       vm.currentStatus = STATUS_SUCCESS;
                       console.log(resultBuff);
+                  },
+                  error: function(response) {
+					vm.openDialog(response.responseJSON.msg);
                   }
                 });
             },
-            getLatestInfo: function () {
-                var m = this.models[this.selected_model];
-                var arr = m.con_mat_train[m.con_mat_train.length-1];
+            getLatestInfo: function (item) {
+                if(item=='train') {
+                    var m = this.models[this.selected_model];
+                    var arr = m.con_mat_train[m.con_mat_train.length - 1];
+                }
+                else{
+                    var m = this.models[this.selected_model];
+                    var arr = m.con_mat_val[m.con_mat_val.length - 1];
+                }
                 if (arr == undefined){
                     return {tn:0, fp:0, fn:0, tp:0};
                 }
                 return {tn:arr[0], fp:arr[1], fn:arr[2], tp:arr[3]};
             },
-            total_population: function () {
-                var m = this.getLatestInfo();
+            total_population: function (item) {
+                var m = this.getLatestInfo(item);
                 return (m.tp + m.tn + m.fp + m.fn);
             },
-            true_positive: function () {
-                return this.getLatestInfo().tp
+            true_positive: function (item) {
+                return this.getLatestInfo(item).tp
             },
-            true_negative: function () {
-                return this.getLatestInfo().tn
+            true_negative: function (item) {
+                return this.getLatestInfo(item).tn
             },
-            false_positive: function () {
-                return this.getLatestInfo().fp
+            false_positive: function (item) {
+                return this.getLatestInfo(item).fp
             },
-            false_negative: function () {
-                return this.getLatestInfo().fn
+            false_negative: function (item) {
+                return this.getLatestInfo(item).fn
             },
-            prevalence: function () {
-                var tot_pos = this.true_negative() + this.false_positive();
-                return ((tot_pos/this.total_population())*100).toFixed(2);
+            prevalence: function (item) {
+                var tot_pos = this.true_negative(item) + this.false_positive(item);
+                return ((tot_pos/this.total_population(item))*100).toFixed(2);
             },
-            accuracy: function () {
-                var tot_true = this.true_negative() + this.true_positive();
-                return ((tot_true/this.total_population())*100).toFixed(2);
+            accuracy: function (item) {
+                var tot_true = this.true_negative(item) + this.true_positive(item);
+                return ((tot_true/this.total_population(item))*100).toFixed(2);
             },
-            precision: function () {
-                var tot_pos = this.true_positive() + this.false_positive();
-                return ((this.true_positive()/tot_pos)*100).toFixed(2);
+            precision: function (item) {
+                var tot_pos = this.true_positive(item) + this.false_positive(item);
+                return ((this.true_positive(item)/tot_pos)*100).toFixed(2);
             },
-            fdr: function () {
-                var tot_pos = this.true_positive() + this.false_positive();
-                return ((this.false_positive()/tot_pos)*100).toFixed(2);
+            fdr: function (item) {
+                var tot_pos = this.true_positive(item) + this.false_positive(item);
+                return ((this.false_positive(item)/tot_pos)*100).toFixed(2);
             },
-            false_omission_rate: function () {
-                var tot_negative = this.false_negative() + this.true_negative();
-                return ((this.false_negative()/tot_negative)*100).toFixed(2);
+            false_omission_rate: function (item) {
+                var tot_negative = this.false_negative(item) + this.true_negative(item);
+                return ((this.false_negative(item)/tot_negative)*100).toFixed(2);
             },
-            negative_predictive_value: function () {
-                var tot_negative = this.false_negative() + this.true_negative();
-                return ((this.true_negative()/tot_negative)*100).toFixed(2);
+            negative_predictive_value: function (item) {
+                var tot_negative = this.false_negative(item) + this.true_negative(item);
+                return ((this.true_negative(item)/tot_negative)*100).toFixed(2);
             },
-            tpr: function(){
-                var tot_con_pos = this.true_positive() + this.false_negative();
-                return ((this.true_positive()/tot_con_pos)*100).toFixed(2);
+            tpr: function(item){
+                var tot_con_pos = this.true_positive(item) + this.false_negative(item);
+                return ((this.true_positive(item)/tot_con_pos)*100).toFixed(2);
             },
-            fnr: function(){
-                var tot_con_pos = this.true_positive() + this.false_negative();
-                return ((this.false_negative()/tot_con_pos)*100).toFixed(2);
+            fnr: function(item){
+                var tot_con_pos = this.true_positive(item) + this.false_negative(item);
+                return ((this.false_negative(item)/tot_con_pos)*100).toFixed(2);
             },
-            fpr: function () {
-                var tot_con_neg = this.false_positive() + this.true_negative();
-                return ((this.false_positive()/tot_con_neg)*100).toFixed(2);
+            fpr: function (item) {
+                var tot_con_neg = this.false_positive(item) + this.true_negative(item);
+                return ((this.false_positive(item)/tot_con_neg)*100).toFixed(2);
             },
-            tnr: function () {
-                var tot_con_neg = this.false_positive() + this.true_negative();
-                return ((this.true_negative()/tot_con_neg)*100).toFixed(2);
+            tnr: function (item) {
+                var tot_con_neg = this.false_positive(item) + this.true_negative(item);
+                return ((this.true_negative(item)/tot_con_neg)*100).toFixed(2);
             },
-            positive_likelihood_ratio: function () {
-                return (this.tpr()/this.fpr()).toFixed(2);
+            positive_likelihood_ratio: function (item) {
+                return (this.tpr(item)/this.fpr(item)).toFixed(2);
             },
-            negative_likelihood_ratio: function () {
-                return (this.fnr()/this.tnr()).toFixed(2);
+            negative_likelihood_ratio: function (item) {
+                return (this.fnr(item)/this.tnr(item)).toFixed(2);
             },
-            diagnostic_odds_ratio: function () {
-                return (this.positive_likelihood_ratio()/this.negative_likelihood_ratio()).toFixed(2);
+            diagnostic_odds_ratio: function (item) {
+                return (this.positive_likelihood_ratio(item)/this.negative_likelihood_ratio(item)).toFixed(2);
             },
-            score: function () {
+            score: function (item) {
                 // return (2*((this.tpr()*this.precision())/(this.tpr()+this.precision()))).toFixed(2);
-                return ((2/((1/this.tpr())+(1/this.precision())))/100).toFixed(2);
+                return ((2/((1/this.tpr(item))+(1/this.precision(item))))/100).toFixed(2);
             },
             getAccuracyDict: function (confusionList, name) {
                 var x_acc = [];
@@ -296,6 +302,15 @@ window.onload = function (){
 
                 for (i = 0; i < acc.length; i++) {
                     acc[i].onclick = function(){
+                        var cord = document.getElementsByClassName("accordion");
+                        var panels = document.getElementsByClassName("panel");
+                        var j;
+                        for(j=0 ; j< cord.length; j++){
+                            if(this != cord[j]) {
+                                cord[j].classList.remove("active");
+                                panels[j].style.display = "none";
+                            }
+                        }
                         /* Toggle between adding and removing the "active" class,
                         to highlight the button that controls the panel */
                         this.classList.toggle("active");
@@ -309,6 +324,14 @@ window.onload = function (){
                         }
                     }
                 }
+            },
+            openDialog: function (message) {
+                this.$refs['dialog'].style.display = "block";
+                this.$refs['dialog'].children[0].children[1].innerText = message;
+                this.$refs['dialog'].children[0].children[2].onclick = this.closeDialog;
+            },
+            closeDialog: function () {
+                this.$refs['dialog'].style.display = 'none';
             }
         }
     });

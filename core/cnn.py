@@ -247,11 +247,19 @@ class CNN(object):
     def _build_model_2(self):
         # def custom_gabor(shape, dtype=None):
         #     total_ker = []
-        #     for i in xrange(shape[3]):
-        #         kernals = []
-        #         for j in xrange(shape[2]):
-        #             kernals.append(cv2.getGaborKernel(ksize=(shape[0], shape[1]), sigma=1, theta=1, lambd=0.5, gamma=0.3, psi=(3.14)*0.5, ktype=CV_64F))
-        #         total_ker.append(kernals)
+        #     for i in xrange(shape[0]):
+        #         kernels = []
+        #         for j in xrange(shape[1]):
+        #             # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
+        #             tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]), sigma=1, theta=1, lambd=0.5, gamma=0.3,
+        #                                             psi=(3.14) * 0.5,
+        #                                             ktype=CV_64F)
+        #             filter = []
+        #             for row in tmp_filter:
+        #                 filter.append(np.delete(row, -1))
+        #             kernels.append(filter)
+        #             # gk.real
+        #         total_ker.append(kernels)
         #     np_tot = shared(np.array(total_ker))
         #     return K.variable(np_tot, dtype=dtype)
 
@@ -274,9 +282,9 @@ class CNN(object):
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 3
-        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))  # , kernel_initializer=custom_gabor,))
-        self.model.add(Activation('relu'))
-        self.model.add(MaxPooling2D(pool_size=self.pool_size))
+        # self.model.add(Convolution2D(self.nb_filters, self.kernel_size))  # , kernel_initializer=custom_gabor,))
+        # self.model.add(Activation('relu'))
+        # self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         self.model.add(Dropout(0.5))
         self.model.add(Flatten())
@@ -356,7 +364,10 @@ class CNN(object):
             self.model = load_model(self.model_path + '.h5')
 
     def predict(self, frame):
-        frame = np.array(np.array(Image.open(frame)).flatten())
+        img = Image.open(frame)
+        if img.size != (self.img_cols, self.img_rows):
+            raise Exception('Image Size Don\'t Matching.')
+        frame = np.array(np.array(img).flatten())
         frame = frame.reshape(1, self.nb_channel, self.img_rows, self.img_cols)
         pred = self.model.predict(frame, batch_size=1)
         return self.category[0] if pred[0][0] > pred[0][1] else self.category[1]

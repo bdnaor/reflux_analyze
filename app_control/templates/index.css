@@ -12,7 +12,7 @@ body{
 }
 #models{
     width: 250px;
-    height: 600px;
+    height: 658px;
     /*min-height: 500px;*/
     /*padding: 328px*/
     margin: 0px auto;
@@ -30,7 +30,7 @@ body{
     margin: 0px auto;
     margin-left: 50px;
     margin-top: 50px;
-    min-height: 200px;
+    /*min-height: 200px;*/
     background-color: white;
     display: inline-block;
 }
@@ -120,10 +120,10 @@ textarea{*/
 }
 /* Style the buttons that are used to open and close the accordion panel */
 button.accordion {
-    background-color: #eee;
-    color: #444;
+    background-color: #333;
+    color: white;
     cursor: pointer;
-    padding: 18px;
+    padding: 5px;
     width: 100%;
     text-align: left;
     border: none;
@@ -133,7 +133,7 @@ button.accordion {
 
 /* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
 button.accordion.active, button.accordion:hover {
-    background-color: #ddd;
+    background-color: #969379;
 }
 
 /* Style the accordion panel. Note: hidden by default */
@@ -141,4 +141,28 @@ div.panel {
     padding: 0 18px;
     background-color: white;
     display: none;
+}
+#dialog{
+    position:fixed;
+    top: 10%;
+    left: 2%;
+    width: 95%;
+    height: 85%;
+    /*width:30em;*/
+    /*height:18em;*/
+    margin-top: 10px; /*set to a negative number 1/2 of your height*/
+    margin-left: 10px; /*set to a negative number 1/2 of your width*/
+    border: 1px solid #ccc;
+    background-color: #17191b;
+    opacity: 0.95;
+}
+#msg{
+    position:fixed;
+    top: 50%;
+    left: 40%;
+    background-color: azure;
+    width: 300px;
+    height: 100px;
+    text-align: center;
+    /*padding-top: 20px;*/
 }

@@ -50,11 +50,14 @@ def add_model(request):
 @csrf_exempt
 def predict_images(request, *args, **kwargs):
     predictions = {}
-    if request.method == 'POST':
-        model_name = request.POST['model_name']
-        cnn = cnn_manager.models[model_name]
-        for image in request.FILES.keys():
-            predictions[image] = cnn.predict(request.FILES[image])
+    try:
+        if request.method == 'POST':
+            model_name = request.POST['model_name']
+            cnn = cnn_manager.models[model_name]
+            for image in request.FILES.keys():
+                predictions[image] = cnn.predict(request.FILES[image])
+    except Exception as e:
+        return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({'predictions': predictions}, status=status.HTTP_200_OK)
 
