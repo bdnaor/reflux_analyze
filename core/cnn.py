@@ -11,7 +11,7 @@ from cv2.cv2 import CV_64F
 import keras.backend as K
 import numpy as np
 from keras.callbacks import ModelCheckpoint, LambdaCallback
-from keras.layers import Conv2D, Convolution2D
+from keras.layers import Conv2D
 from keras.optimizers import SGD
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
@@ -21,7 +21,6 @@ from keras.utils import np_utils
 from keras.layers.convolutional import MaxPooling2D
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.models import Sequential, save_model, load_model
-# from skimage.filters import gabor_kernel
 import cv2
 from theano import shared
 
@@ -37,24 +36,38 @@ def calculate_score(confusion_matrix):
 
 
 class CNN(object):
-    def __init__(self, params, reload=False):
+    def __init__(self, params, _reload=False):
         self.model_name = params['model_name']
         self.model_path = os.path.join(ROOT_DIR, 'cnn_models', self.model_name)
-        # the original data set
-        self.input_dataset_path = os.path.join(ROOT_DIR, 'dataset')
-        # the deep learning model
-        self.model = None
+        self.input_dataset_path = os.path.join(ROOT_DIR, 'dataset')  # the original data set
+        self.model = None  # the deep learning model
         self.split_cases = True
-        if reload:
+        self.with_gabor = False
+        if _reload:
             self._load()
+            self.total_train_epoch = 0
+            self.done_train_epoch = 0
         else:
             self.img_rows = int(params.get('img_rows', 200))
             self.img_cols = int(params.get('img_cols', 200))
             self.nb_channel = int(params.get('nb_channel', 3))
             self.batch_size = int(params.get('batch_size', 32))
             self.epoch = int(params.get('epoch', 5))
-            # number of convolution filter to use
-            self.nb_filters = int(params.get('nb_filters', 32))
+            self.nb_filters = int(params.get('nb_filters', 32))  # number of convolution filter to use
+            self.dropout = params.get('dropout', 0.25)
+            self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
+            self.con_mat_val = []
+            self.con_mat_train = []
+            self.hist = None  # History of the training
+            self.category = ["negative", "positive"]
+            self.total_train_epoch = 0
+            self.done_train_epoch = 0
+
+            # the data set for train and validation
+            self.X_train = None
+            self.X_test = None
+            self.y_train = None
+            self.y_test = None
 
             # size of pooling area for max pooling
             self.pool_size = params.get('pool_size', (2, 2))
@@ -70,26 +83,7 @@ class CNN(object):
             if isinstance(self.kernel_size, int):
                 self.kernel_size = (self.kernel_size, self.kernel_size)
 
-            self.dropout = params.get('dropout', 0.5)
-            self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
-            self.con_mat_val = []
-            self.con_mat_train = []
-            # History of the training
-            self.hist = None
-            self.category = []
-            self.total_train_epoch = 0
-            self.done_train_epoch = 0
-
-            # the data set for train and validation
-            self.X_train = None
-            self.X_test = None
-            self.y_train = None
-            self.y_test = None
-
             self._build_model_2()
-
-        self.total_train_epoch = 0
-        self.done_train_epoch = 0
 
     def load_data_set_split_cases(self):
         # the data set after resize
@@ -189,8 +183,8 @@ class CNN(object):
         label = np.array(label)
 
         del images
-
         gc.collect()
+
         # random_state for psudo random
         # the data set load, shuffled and split between train and validation sets
         data, label = shuffle(img_matrix, label, random_state=7) #random_state=2
@@ -207,13 +201,9 @@ class CNN(object):
         self.X_train /= 255
         self.X_test /= 255
 
-        # convert class vectore to binary class matrices
+        # convert class vector to binary class matrices
         self.y_train = np_utils.to_categorical(self.y_train, len(self.category))
         self.y_test = np_utils.to_categorical(self.y_test, len(self.category))
-
-        # print('X_train shape: ', self.X_train.shape)
-        # print(self.X_train.shape[0], 'train example')
-        # print(self.X_test.shape[0], 'validation example')
 
     def _build_model(self):
         self.model = Sequential()
@@ -241,7 +231,7 @@ class CNN(object):
         self.model.add(Flatten())
         self.model.add(Dense(64))
         self.model.add(Activation('relu'))
-        self.model.add(Dropout(0.5))
+        self.model.add(Dropout(self.dropout))
 
         self.model.add(Dense(len(self.category)))
         self.model.add(Activation(self.activation_function))
@@ -249,7 +239,7 @@ class CNN(object):
         # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
         sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
         # binary_accuracy, categorical_accuracy
-        self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])  # 'adam'
+        self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     def _build_model_2(self):
         def custom_gabor(shape, dtype=None):
@@ -258,12 +248,21 @@ class CNN(object):
                 kernels = []
                 for j in xrange(shape[1]):
                     # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
-                    tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]), sigma=1, theta=1, lambd=0.5, gamma=0.3,
+                    tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]),
+                                                    sigma=0.5,
+                                                    theta=0.3,
+                                                    lambd=0.5,
+                                                    gamma=0.3,
                                                     psi=(3.14) * 0.5,
                                                     ktype=CV_64F)
                     filter = []
-                    for row in tmp_filter:
+                    for i in xrange(len(tmp_filter)):
+                        if i == shape[2]:
+                            break
+                        row = tmp_filter[i]
                         filter.append(np.delete(row, -1))
+                    # for row in tmp_filter:
+                    #     filter.append(np.delete(row, -1))
                     kernels.append(filter)
                     # gk.real
                 total_ker.append(kernels)
@@ -272,40 +271,44 @@ class CNN(object):
 
         self.with_gabor = True
 
-
-        # the data set load, shuffled and split between train and validation sets
         self.model = Sequential()
 
         # Layer 1
-        self.model.add(Convolution2D(self.nb_filters, self.kernel_size,
-                                     kernel_initializer=custom_gabor,
-                                     input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
+        self.model.add(Conv2D(filters=self.nb_filters,
+                              kernel_size=self.kernel_size,
+                              padding='same',
+                              kernel_initializer=custom_gabor,
+                              input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
 
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 2
-        self.model.add(Convolution2D(self.nb_filters, self.kernel_size))  # kernel_initializer=custom_gabor))
+        self.model.add(Conv2D(filters=self.nb_filters,
+                              kernel_size=self.kernel_size,
+                              kernel_initializer=custom_gabor,
+                              padding='same'))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
-        # Layer 3
-        # self.model.add(Convolution2D(self.nb_filters, self.kernel_size))  # , kernel_initializer=custom_gabor,))
-        # self.model.add(Activation('relu'))
-        # self.model.add(MaxPooling2D(pool_size=self.pool_size))
+        # # Layer 3
+        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
+        self.model.add(Activation('relu'))
+        self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
-        self.model.add(Dropout(0.5))
+        self.model.add(Dropout(self.dropout))
         self.model.add(Flatten())
         self.model.add(Dense(64))
         self.model.add(Activation('relu'))
-        self.model.add(Dropout(0.5))
+        self.model.add(Dropout(self.dropout))
 
-        self.model.add(Dense(2))  # len(self.category)
-        self.model.add(Activation('softmax'))  # 'sigmoid'
+        self.model.add(Dense(len(self.category)))
+        self.model.add(Activation(self.activation_function))
 
         # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-
+        # sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
         # binary_accuracy, categorical_accuracy
+        # self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     def save_only_best(self, epoch=None, logs=None):
@@ -316,8 +319,11 @@ class CNN(object):
                 last_biggest = False
                 break
         if last_biggest:
-            print 'find best model and save it.'
+            print 'find best model and save it. score = %s' % (scores[-1],)
             self.save()
+        else:
+            print 'save json only'
+            self.save(only_json=True)
 
     def _calculate_confusion_matrix(self, epoch=None, logs=None):
         # For test set
@@ -336,17 +342,18 @@ class CNN(object):
         self.done_train_epoch += 1
         # self.save(only_json=True)
 
-
-
     def train_model(self, n_epoch=None):
         '''
             saves the model weights after each epoch if the validation loss decreased
         '''
+        print 'start load'
         if not hasattr(self, 'X_train') or self.X_train is None:
             if self.split_cases:
                 self.load_data_set_split_cases()
+                # self.load_data_set()
             else:
                 self.load_data_set()
+        print 'finish load'
 
         self.total_train_epoch = n_epoch
         # check_pointer_best = ModelCheckpoint(filepath=self.model_path + '.h5(best)', verbose=1, save_best_only=True)
@@ -365,7 +372,7 @@ class CNN(object):
         self._load()
 
     def save(self, only_json=False):
-        if self.with_gabor:
+        if not only_json and self.with_gabor:
             self.model.save_weights(self.model_path + '.h5(weights)')
         elif not only_json:
             self.model.save(self.model_path + '.h5')
@@ -378,7 +385,7 @@ class CNN(object):
             # tmp = pickle.load(input)
             tmp = json.loads(_input.read())
         self.__dict__.update(tmp)
-        if self.with_gabor:
+        if hasattr(self, 'with_gabor') and self.with_gabor:
             self._build_model_2()
             self.model.load_weights(self.model_path + '.h5(weights)')
         elif os.path.exists(self.model_path + '.h5(best)'):

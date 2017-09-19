@@ -59,12 +59,33 @@ window.onload = function (){
                 $.get('/get_models', function(data){
                     vm.models = JSON.parse(data);
                 });
-                setTimeout(function(){ vm.get_models() }, 7000);
+                setTimeout(function(){ vm.get_models() }, 70000);
             },
-            show_details: function(model){
+            showOptionList: function(e, divid, model){
+
+                this.selected_model = model;
+
+			    var left  = e.clientX  + "px";
+			    var top  = e.clientY  + "px";
+
+			    var div = document.getElementById(divid);
+
+			    div.style.left = left;
+			    div.style.top = top;
+
+			    $("#"+divid).toggle();
+			    $("#"+divid).mouseleave(function() {
+                    $("#"+divid).css("display", "none");
+                  });
+			    $("#"+divid).click(function() {
+                    $("#"+divid).css("display", "none");
+                  });
+			     e.preventDefault();
+			    return false;
+			},
+            show_details: function(){
                 this.mode = 'model_details';
                 this.work_header = 'Model Details';
-                this.selected_model = model;
             },
             create_model: function () {
                 this.mode = 'create_model';
@@ -80,9 +101,9 @@ window.onload = function (){
             start_train: function (model) {
                 vm = this;
                 ep = this.$refs['epoch_train'].value;
-                $.post('/start_train',{'model_name':model, 'epoch': ep},function(){
+                $.post('/start_train',{'model_name':model, 'epoch': ep},function(data, status){
                     if(status=="success"){
-
+                        return;
                     }
                     else{
                         vm.openDialog('Fail start train');

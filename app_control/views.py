@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import json
+from threading import Thread
 
 from django.shortcuts import render
 
@@ -13,8 +14,7 @@ from core.cnn import CNN
 from core.cnn_manager import CNNManager
 from rest_framework import status
 from rest_framework.response import Response
-import numpy as np
-from PIL import Image
+from multiprocessing import Process
 
 cnn_manager = CNNManager()
 
@@ -65,12 +65,20 @@ def predict_images(request, *args, **kwargs):
 @api_view(['GET', 'POST', ])
 @csrf_exempt
 def start_train(request):
-    if request.method == 'POST':
-        model_name = request.POST['model_name']
-        epoch = int(request.POST['epoch'])
-        cnn = cnn_manager.models[model_name]
-        # cnn.fake_train(epoch)
-        cnn.train_model(epoch)
+    try:
+        if request.method == 'POST':
+            model_name = request.POST['model_name']
+            epoch = int(request.POST['epoch'])
+            cnn = cnn_manager.models[model_name]
+            # p = Process(target=cnn.train_model, args=(epoch,))
+            # p.start()
+            # thread = Thread(target=cnn.train_model, args=(epoch,))
+            # thread.start()
+            cnn.train_model(epoch)
+        return Response({'msg': 'ok'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
+
 
 # class FileFieldForm(forms.Form):
 #     file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
