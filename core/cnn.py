@@ -29,6 +29,8 @@ from theano import shared
 from manage import ROOT_DIR
 from utils.prepare_dataset import reshape_images
 
+FORMAT = '%Y-%m-%d %H:%M:%S'
+
 
 def calculate_score(confusion_matrix):
     try:
@@ -350,20 +352,21 @@ class CNN(object):
     def _calculate_confusion_matrix(self, epoch=None, logs=None):
         try:
             # For test set
-            self.times_start_test.append(datetime.now())
+            self.times_start_test.append(datetime.now().strftime(FORMAT))
             y_pred = self.model.predict_classes(self.X_test)
             tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
             print "val: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
             self.con_mat_val.append([tn, fp, fn, tp])
 
             # For train set
-            self.times_start_train.append(datetime.now())
+            #  datetime.strptime('2017-09-23 00:16:53', '%Y-%m-%d %H:%M:%S')
+            self.times_start_train.append(datetime.now().strftime(FORMAT))
             y_pred = self.model.predict_classes(self.X_train)
             tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
             print "train: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
             self.con_mat_train.append([tn, fp, fn, tp])
 
-            self.times_finish.append(datetime.now())
+            self.times_finish.append(datetime.now().strftime(FORMAT))
             self.done_train_epoch += 1
         except Exception as e:
             print traceback.format_exc()
