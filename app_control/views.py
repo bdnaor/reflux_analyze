@@ -80,6 +80,50 @@ def start_train(request):
         return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET', 'POST', ])
+@csrf_exempt
+def full_plan(request):
+    try:
+        item = 1
+        for split_cases in [True, False]:
+            for dropout in [0.25, 0.5]:
+                for activation_function in ['softmax', 'sigmoid']:
+                    for img_size in [(50, 50), (75, 75), (100, 100), (150, 150), (200, 200)]:
+                        for sigma in [2, 3, 4, 5, 6]:
+                            for theta in [0, 45, 90, 135]:
+                                for lammbd in [8, 10, 12]:
+                                    for gamma in [0.3, 0.5, 0.7, 0.9]:
+                                        for psi in [0, 30, 60, 90]:
+                                            for nb_filters in [32, 64]:
+                                                for kernel_size in [5, 6, 7, 8, 9, 10]:
+                                                    for pool_size in [2, 4, 6, 8]:
+                                                        for batch_size in [32, 64, 128]:
+                                                            try:
+                                                                params = {}
+                                                                params['model_name'] = "item %s" % item
+                                                                item += 1
+                                                                params['split_cases'] = split_cases
+                                                                params['img_rows'] = img_size[0]
+                                                                params['img_cols'] = img_size[1]
+                                                                params['batch_size'] = batch_size
+                                                                params['nb_filters'] = nb_filters
+                                                                params['dropout'] = dropout
+                                                                params['activation_function'] = activation_function
+                                                                params['pool_size'] = pool_size
+                                                                params['kernel_size'] = kernel_size
+                                                                params['sigma'] = sigma
+                                                                params['theta'] = theta
+                                                                params['lammbd'] = lammbd
+                                                                params['gamma'] = gamma
+                                                                params['psi'] = psi
+
+                                                                cnn = CNN(params)
+                                                                cnn.train_model(3)
+                                                            except Exception as e:
+                                                                print e
+    except Exception as e:
+        print e
+        return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
 # class FileFieldForm(forms.Form):
 #     file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
 #

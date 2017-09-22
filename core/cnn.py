@@ -2,11 +2,13 @@ import json
 import os
 
 import gc
+import traceback
 
 from random import randint
 
 import time
 
+from  datetime import datetime
 from cv2.cv2 import CV_64F
 import keras.backend as K
 import numpy as np
@@ -29,10 +31,15 @@ from utils.prepare_dataset import reshape_images
 
 
 def calculate_score(confusion_matrix):
-    tn, fp, fn, tp = confusion_matrix
-    _recall = float(tp) / (tp + fn)
-    _precision = float(tp) / (tp+fp)
-    return float(2) / ((float(1) / _recall) + (float(1) / _precision))
+    try:
+        tn, fp, fn, tp = confusion_matrix
+        _recall = float(tp) / (tp + fn)
+        _precision = float(tp) / (tp+fp)
+        return float(2) / ((float(1) / _recall) + (float(1) / _precision))
+    except Exception as e:
+        print traceback.format_exc()
+        print 'Error: can not calculate score:\ntn %s\nfp %s\nfn %s\n tp %s\n' % (tn, fp, fn, tp)
+        return 0
 
 
 class CNN(object):
@@ -48,6 +55,7 @@ class CNN(object):
             self.total_train_epoch = 0
             self.done_train_epoch = 0
         else:
+            self.split_cases = params.get('split_cases', True)
             self.img_rows = int(params.get('img_rows', 200))
             self.img_cols = int(params.get('img_cols', 200))
             self.nb_channel = int(params.get('nb_channel', 3))
@@ -56,9 +64,19 @@ class CNN(object):
             self.nb_filters = int(params.get('nb_filters', 32))  # number of convolution filter to use
             self.dropout = params.get('dropout', 0.25)
             self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
+            # Gabor params
+            self.sigma = params.get('sigma', 0.5)
+            self.theta = params.get('theta', 0.3)
+            self.lambd = params.get('lambd', 0.5)
+            self.gamma = params.get('gamma', 0.3)
+            self.psi = params.get('psi', 0)
+
             self.con_mat_val = []
             self.con_mat_train = []
             self.hist = None  # History of the training
+            self.times_start_test = []
+            self.times_start_train = []
+            self.times_finish = []
             self.category = ["negative", "positive"]
             self.total_train_epoch = 0
             self.done_train_epoch = 0
@@ -249,11 +267,11 @@ class CNN(object):
                 for j in xrange(shape[1]):
                     # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
                     tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]),
-                                                    sigma=0.5,
-                                                    theta=0.3,
-                                                    lambd=0.5,
-                                                    gamma=0.3,
-                                                    psi=(3.14) * 0.5,
+                                                    sigma=self.sigma,
+                                                    theta=self.theta,
+                                                    lambd=self.lambd,
+                                                    gamma=self.gamma,
+                                                    psi=self.psi,
                                                     ktype=CV_64F)
                     filter = []
                     for i in xrange(len(tmp_filter)):
@@ -284,7 +302,7 @@ class CNN(object):
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 2
-        self.model.add(Conv2D(filters=self.nb_filters,
+        self.model.add(Conv2D(filters=self.nb_filters*2,
                               kernel_size=self.kernel_size,
                               kernel_initializer=custom_gabor,
                               padding='same'))
@@ -292,16 +310,19 @@ class CNN(object):
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # # Layer 3
-        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
-        self.model.add(Activation('relu'))
-        self.model.add(MaxPooling2D(pool_size=self.pool_size))
+        # self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
+        # self.model.add(Activation('relu'))
+        # self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         self.model.add(Dropout(self.dropout))
         self.model.add(Flatten())
+
+        # Layer 4
         self.model.add(Dense(64))
         self.model.add(Activation('relu'))
         self.model.add(Dropout(self.dropout))
 
+        # Layer 5
         self.model.add(Dense(len(self.category)))
         self.model.add(Activation(self.activation_function))
 
@@ -326,21 +347,25 @@ class CNN(object):
             self.save(only_json=True)
 
     def _calculate_confusion_matrix(self, epoch=None, logs=None):
-        # For test set
-        y_pred = self.model.predict_classes(self.X_test)
-        # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
-        tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
-        self.con_mat_val.append([tn, fp, fn, tp])
+        try:
+            # For test set
+            self.times_start_test.append(datetime.now())
+            y_pred = self.model.predict_classes(self.X_test)
+            tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
+            self.con_mat_val.append([tn, fp, fn, tp])
 
-        # For train set
-        y_pred = self.model.predict_classes(self.X_train)
-        # y_pred = [0 if p[0] > p[1] else 1 for p in y_pred]
-        tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
-        self.con_mat_train.append([tn, fp, fn, tp])
+            # For train set
+            self.times_start_train.append(datetime.now())
+            y_pred = self.model.predict_classes(self.X_train)
+            tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
+            self.con_mat_train.append([tn, fp, fn, tp])
 
-        # print confusion_matrix(np.argmax(self.y_test, axis=1), y_pred)
-        self.done_train_epoch += 1
-        # self.save(only_json=True)
+            self.times_finish.append(datetime.now())
+            self.done_train_epoch += 1
+        except Exception as e:
+            print traceback.format_exc()
+
+
 
     def train_model(self, n_epoch=None):
         '''
@@ -355,9 +380,14 @@ class CNN(object):
                 self.load_data_set()
         print 'finish load'
 
+        # Initialize params for progress bar
+        self.done_train_epoch = 0
         self.total_train_epoch = n_epoch
-        # check_pointer_best = ModelCheckpoint(filepath=self.model_path + '.h5(best)', verbose=1, save_best_only=True)
-        # check_pointer = ModelCheckpoint(filepath=self.model_path + '.h5', verbose=1)
+
+        # Evaluate the model without any train
+        self._calculate_confusion_matrix()
+
+        # Start train the model
         _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
         _save_only_best = LambdaCallback(on_epoch_end=lambda epoch, logs: self.save_only_best(epoch, logs))
         self.hist = self.model.fit(self.X_train,
@@ -431,7 +461,13 @@ class CNN(object):
             "kernel_size": self.kernel_size,
             "total_train_epoch": self.total_train_epoch,
             "done_train_epoch": self.done_train_epoch,
-            "with_gabor": self.with_gabor
+            "with_gabor": self.with_gabor,
+            "sigma": self.sigma,
+            "theta": self.theta,
+            "lambd": self.lambd,
+            "gamma": self.gamma,
+            "psi": self.psi,
+
         }
 
     def create_model_svg(self):

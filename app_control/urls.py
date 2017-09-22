@@ -8,4 +8,5 @@ urlpatterns = [
     url(r'^add_model$', views.add_model),
     url(r'^predict_images$', views.predict_images),
     url(r'^start_train$', views.start_train),
+    url(r'^full_plan$', views.full_plan),
 ]

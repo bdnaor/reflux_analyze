@@ -59,7 +59,7 @@ window.onload = function (){
                 $.get('/get_models', function(data){
                     vm.models = JSON.parse(data);
                 });
-                setTimeout(function(){ vm.get_models() }, 70000);
+                setTimeout(function(){ vm.get_models() }, 700000);
             },
             showOptionList: function(e, divid, model){
 
