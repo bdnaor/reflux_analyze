@@ -55,6 +55,7 @@ class CNN(object):
             self.total_train_epoch = 0
             self.done_train_epoch = 0
         else:
+            self.train_ratio = params.get('train_ratio', 0.5)
             self.split_cases = params.get('split_cases', True)
             self.img_rows = int(params.get('img_rows', 200))
             self.img_cols = int(params.get('img_cols', 200))
@@ -122,14 +123,14 @@ class CNN(object):
         for idx, category in enumerate(self.category):
             category_path = os.path.join(self.adaptation_dataset, category)
             case_folder = os.listdir(category_path)
-            for sub_folder in case_folder[:int(len(case_folder)*0.5)]:
+            for sub_folder in case_folder[:int(len(case_folder)*self.train_ratio)]:
                 case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
                 images = os.listdir(case_folder_path)
                 for im in images:
                     im_path = os.path.join(case_folder_path, im)
                     test_img_matrix.append(np.array(np.array(Image.open(im_path)).flatten()))
                     test_label.append(idx)
-            for sub_folder in case_folder[int(len(case_folder)*0.5):]:
+            for sub_folder in case_folder[int(len(case_folder)*self.train_ratio):]:
                 case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
                 images = os.listdir(case_folder_path)
                 for im in images:
@@ -352,19 +353,20 @@ class CNN(object):
             self.times_start_test.append(datetime.now())
             y_pred = self.model.predict_classes(self.X_test)
             tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
+            print "val: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
             self.con_mat_val.append([tn, fp, fn, tp])
 
             # For train set
             self.times_start_train.append(datetime.now())
             y_pred = self.model.predict_classes(self.X_train)
             tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
+            print "train: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
             self.con_mat_train.append([tn, fp, fn, tp])
 
             self.times_finish.append(datetime.now())
             self.done_train_epoch += 1
         except Exception as e:
             print traceback.format_exc()
-
 
 
     def train_model(self, n_epoch=None):
@@ -386,6 +388,7 @@ class CNN(object):
 
         # Evaluate the model without any train
         self._calculate_confusion_matrix()
+        self.save_only_best()
 
         # Start train the model
         _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
@@ -408,7 +411,7 @@ class CNN(object):
             self.model.save(self.model_path + '.h5')
         save_dict = self.get_info()
         with open(self.model_path+'.json', 'wb') as output:
-            output.write(json.dumps(save_dict))
+            output.write(json.dumps(save_dict, sort_keys=True, indent=4, separators=(',', ': ')))
 
     def _load(self):
         with open(self.model_path+'.json', 'rb') as _input:
@@ -452,6 +455,7 @@ class CNN(object):
             "nb_filters": self.nb_filters,
             "pool_size": self.pool_size,
             "hist": self.hist,
+            "train_ratio": self.train_ratio,
             "img_rows": self.img_rows,
             "img_cols": self.img_cols,
             "batch_size": self.batch_size,

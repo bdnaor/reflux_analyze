@@ -131,25 +131,15 @@ def full_plan(request):
         print e
         return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
     print 'finish all plan'
-# class FileFieldForm(forms.Form):
-#     file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
-#
-#
-# @api_view(['GET', 'POST', ])
-# @csrf_exempt
-# class FileFieldView(FormView):
-#     form_class = FileFieldForm
-#     template_name = 'index.html'
-#     success_url = '/predict_images'  # Replace with your URL or reverse().
-#
-#     def post(self, request, *args, **kwargs):
-#         form_class = self.get_form_class()
-#         form = self.get_form(form_class)
-#         files = request.FILES.getlist('file_field')
-#         if form.is_valid():
-#             for f in files:
-#                 pass
-#             return self.form_valid(form)
-#         else:
-#             return self.form_invalid(form)
 
+
+@api_view(['GET', 'POST', ])
+@csrf_exempt
+def good_plan(request):
+    try:
+        cnn = CNN({'model_name': 'good_plan_50', 'img_rows': 50, 'img_cols': 50})
+        cnn.train_model(7)
+    except Exception as e:
+        print e
+        return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
+    print 'finish all plan'
