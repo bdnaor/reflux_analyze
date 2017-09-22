@@ -14,7 +14,9 @@ from core.cnn import CNN
 from core.cnn_manager import CNNManager
 from rest_framework import status
 from rest_framework.response import Response
-from multiprocessing import Process
+import os
+
+from manage import ROOT_DIR
 
 cnn_manager = CNNManager()
 
@@ -99,6 +101,10 @@ def full_plan(request):
                                                     for pool_size in [2, 4, 6, 8]:
                                                         for batch_size in [32, 64, 128]:
                                                             try:
+                                                                item_path = os.path.join(ROOT_DIR,'cnn_models','item %s.json' % item)
+                                                                if os.path.exists(item_path):
+                                                                    item += 1
+                                                                    break
                                                                 params = {}
                                                                 params['model_name'] = "item %s" % item
                                                                 item += 1
@@ -124,6 +130,7 @@ def full_plan(request):
     except Exception as e:
         print e
         return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
+    print 'finish all plan'
 # class FileFieldForm(forms.Form):
 #     file_field = forms.FileField(widget=forms.ClearableFileInput(attrs={'multiple': True}))
 #
