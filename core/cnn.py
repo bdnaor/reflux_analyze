@@ -471,6 +471,9 @@ class CNN(object):
             "lambd": self.lambd,
             "gamma": self.gamma,
             "psi": self.psi,
+            "times_start_test": self.times_start_test,
+            "times_start_train": self.times_start_train,
+            "times_finish": self.times_finish,
 
         }
 

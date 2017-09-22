@@ -137,7 +137,8 @@ def full_plan(request):
 @csrf_exempt
 def good_plan(request):
     try:
-        cnn = CNN({'model_name': 'good_plan_50', 'img_rows': 50, 'img_cols': 50})
+        # cnn = CNN({'model_name': 'good_plan_50', 'img_rows': 50, 'img_cols': 50})
+        cnn = CNN({'model_name': 'good_plan_50'}, True)
         cnn.train_model(7)
     except Exception as e:
         print e
