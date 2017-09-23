@@ -52,6 +52,7 @@
                         <span><label>Epoch: </label><input type="text" ref="epoch" size="35" value="5"></span><br/>
                         <span><label>Kernel Size: </label><input type="text" ref="kernel_size" size="35" value="3"></span><br/>
                         <span><label>Pool Size: </label><input type="text" ref="pool_size" size="35" value="2"></span><br/>
+                        <!--<span><label>Train Ratio: </label><input type="text" ref="train_model" size="35" value="2"></span><br/>-->
                         <button style="margin-left: 240px;margin-top: 38px;margin-bottom: 40px;" @click="post_create">create</button>
                     </div>
 
@@ -59,14 +60,22 @@
                     <div v-if="mode == 'model_details'" id="model_details">
                         <button class="accordion"><label style="margin-left: 20px;"><b><i>Created Info</i></b></label><br/></button>
                         <div id="created_info" class="panel" style="margin: 20px;">
-                            <!--img_rows=200, img_cols=200, nb_channel=3, batch_size=32, nb_epoch=5, pool_size=2, kernel_size=3):-->
                             <span><label>Model Name: </label><input v-bind:value="selected_model" type="text" ref="model_name" size="35" disabled></span><br/>
                             <span><label>Image Rows: </label><input v-bind:value="models[selected_model].img_rows" type="text" ref="img_rows" size="35" disabled></span><br/>
                             <span><label>Image Columns: </label><input v-bind:value="models[selected_model].img_cols" type="text" ref="img_cols" size="35" disabled></span><br/>
-                            <!--<span><label>Image Color: </label><input type="text" ref="nb_channel" size="35"></span><br/>-->
-                            <span><label>Epoch: </label><input v-bind:value="models[selected_model].epoch" type="text" ref="epoch" size="35" disabled></span><br/>
+                            <span><label>Epoch: </label><input v-bind:value="models[selected_model].con_mat_train.length" type="text" ref="epoch" size="35" disabled></span><br/>
                             <span><label>Kernel Size: </label><input v-bind:value="models[selected_model].kernel_size" type="text" ref="kernel_size" size="35" disabled></span><br/>
                             <span><label>Pool Size: </label><input v-bind:value="models[selected_model].pool_size" type="text" ref="pool_size" size="35" disabled></span><br/>
+                            <span><label>Activation: </label><input v-bind:value="models[selected_model].activation_function" type="text" ref="activation_function" size="35" disabled></span><br/>
+                            <span><label>Dropout: </label><input v-bind:value="models[selected_model].dropout" type="text" ref="dropout" size="35" disabled></span><br/>
+                            <span><label>Filters: </label><input v-bind:value="models[selected_model].nb_filters" type="text" ref="nb_filters" size="35" disabled></span><br/>
+                            <span><label>Train Ratio: </label><input v-bind:value="models[selected_model].train_ratio" type="text" ref="train_ratio" size="35" disabled></span><br/>
+                            <span><label>Batch Size: </label><input v-bind:value="models[selected_model].batch_size" type="text" ref="batch_size" size="35" disabled></span><br/>
+                            <span><label>Sigma: </label><input v-bind:value="models[selected_model].sigma" type="text" ref="sigma" size="35" disabled></span><br/>
+                            <span><label>Theta: </label><input v-bind:value="models[selected_model].theta" type="text" ref="theta" size="35" disabled></span><br/>
+                            <span><label>Lambda: </label><input v-bind:value="models[selected_model].lambd" type="text" ref="lambd" size="35" disabled></span><br/>
+                            <span><label>Gamma: </label><input v-bind:value="models[selected_model].gamma" type="text" ref="gamma" size="35" disabled></span><br/>
+                            <span><label>Psi: </label><input v-bind:value="models[selected_model].psi" type="text" ref="psi" size="35" disabled></span><br/>
                         </div>
 
                         <template v-for="item in ['train','test']">
@@ -199,6 +208,7 @@
                             <th>Lambda</th>
                             <th>Gamma</th>
                             <th>Psi</th>
+                            <th>Epoch</th>
                             <th>Train Score</th>
                             <th>Test Score</th>
                         </tr>
@@ -220,6 +230,7 @@
                                 <td>{{ models[model]["lambd"] }}</td>
                                 <td>{{ models[model]["gamma"] }}</td>
                                 <td>{{ models[model]["psi"] }}</td>
+                                <td>{{ models[model].con_mat_train.length }}</td>
                                 <td>{{ score(['train', model]) }}</td>
                                 <td>{{ score(['test', model]) }}</td>
                             </tr>

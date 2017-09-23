@@ -298,7 +298,10 @@ window.onload = function (){
             },
             score: function (item) {
                 // return (2*((this.tpr()*this.precision())/(this.tpr()+this.precision()))).toFixed(2);
-                return ((2/((1/this.tpr(item))+(1/this.precision(item))))/100).toFixed(2);
+                score = ((2/((1/this.tpr(item))+(1/this.precision(item))))/100).toFixed(2);
+                if (score == "NaN")
+                    return 0;
+                return score;
             },
             getAccuracyDict: function (confusionList, name) {
                 var x_acc = [];
