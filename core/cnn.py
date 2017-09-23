@@ -350,21 +350,23 @@ class CNN(object):
     def _calculate_confusion_matrix(self, epoch=None, logs=None):
         try:
             # For test set
-            self.times_start_test.append(datetime.now().strftime(FORMAT))
+            if len(self.times_start_test) < 3:
+                self.times_start_test.append(datetime.now().strftime(FORMAT))
             y_pred = self.model.predict_classes(self.X_test)
             tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
             print "\nval: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
             self.con_mat_val.append([tn, fp, fn, tp])
 
             # For train set
-            #  datetime.strptime('2017-09-23 00:16:53', '%Y-%m-%d %H:%M:%S')
-            self.times_start_train.append(datetime.now().strftime(FORMAT))
+            if len(self.times_start_train) < 3:
+                self.times_start_train.append(datetime.now().strftime(FORMAT))
             y_pred = self.model.predict_classes(self.X_train)
             tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
             print "\ntrain: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
             self.con_mat_train.append([tn, fp, fn, tp])
 
-            self.times_finish.append(datetime.now().strftime(FORMAT))
+            if len(self.times_finish) < 3:
+                self.times_finish.append(datetime.now().strftime(FORMAT))
             self.done_train_epoch += 1
         except Exception as e:
             print traceback.format_exc()
