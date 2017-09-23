@@ -6,9 +6,8 @@ import traceback
 
 from random import randint
 
-import time
-
-from  datetime import datetime
+from keras.models import model_from_json
+from datetime import datetime
 from cv2.cv2 import CV_64F
 import keras.backend as K
 import numpy as np
@@ -260,13 +259,13 @@ class CNN(object):
         # binary_accuracy, categorical_accuracy
         self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
-    def _build_model_2(self):
+    def _build_model_2(self, reload=False):
         def custom_gabor(shape, dtype=None):
             total_ker = []
             for i in xrange(shape[0]):
                 kernels = []
                 for j in xrange(shape[1]):
-                    # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
+                    # sigma=1, theta=1, lambd=0.5, gamma=0.3, psi=(3.14) * 0.5 = 1.57,
                     tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]),
                                                     sigma=self.sigma,
                                                     theta=self.theta,
@@ -331,7 +330,7 @@ class CNN(object):
         # sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
         # binary_accuracy, categorical_accuracy
         # self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
-        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        self.compile()
 
     def save_only_best(self, epoch=None, logs=None):
         scores = [calculate_score(item) for item in self.con_mat_val]
@@ -407,8 +406,16 @@ class CNN(object):
         # load to self.model the best model
         self._load()
 
+    def compile(self):
+        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
     def save(self, only_json=False):
         if not only_json and self.with_gabor:
+            self.evaluate_model()
+            # serialize model to JSON
+            model_json = self.model.to_json()
+            with open(self.model_path+'.json(model)', "w") as json_file:
+                json_file.write(model_json)
             self.model.save_weights(self.model_path + '.h5(weights)')
         elif not only_json:
             self.model.save(self.model_path + '.h5')
@@ -443,8 +450,15 @@ class CNN(object):
             self.psi = 1.57
 
         if hasattr(self, 'with_gabor') and self.with_gabor:
-            self._build_model_2()
-            self.model.load_weights(self.model_path + '.h5(weights)')
+            if not os.path.exists(self.model_path + '.json(model)'):
+                self._build_model_2()
+            else:
+                with open(self.model_path + '.json(model)', "r") as json_file:
+                    loaded_model_json = json_file.read()
+                self.model = model_from_json(loaded_model_json)
+                self.model.load_weights(self.model_path + '.h5(weights)')
+                self.evaluate_model()
+            # self.compile()
         elif os.path.exists(self.model_path + '.h5(best)'):
             self.model = load_model(self.model_path + '.h5(best)')
         else:
@@ -509,3 +523,11 @@ class CNN(object):
         svg_res = model_to_dot(self.model).create(prog='dot', format='svg')
         with open(self.model_path+'.svg','w') as _f:
             _f.write(svg_res)
+
+    def evaluate_model(self):
+        # evaluate the model
+        scores = self.model.evaluate(self.X_train, self.y_train, verbose=0)
+        print("TrainSet: %s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
+
+        scores = self.model.evaluate(self.X_test, self.y_test, verbose=0)
+        print("TestSet: %s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))

@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import json
-from threading import Thread
 
 from django.shortcuts import render
 
@@ -20,8 +16,6 @@ from manage import ROOT_DIR
 from utils.configurations import load_configurations, get_random_conf
 
 cnn_manager = CNNManager()
-
-
 
 
 def index(request):
