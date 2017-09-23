@@ -1,10 +1,13 @@
 <html>
 	<head>
         <link rel="stylesheet" href="static/index.css">
+        <link rel="stylesheet" href="static/js/tablesorter/themes/blue/style.css">
         <script type="text/javascript" src="static/js/jquery-3.2.1.js"></script>
         <script type="text/javascript" src="static/index.js"></script>
         <script src="static/js/vue.js"></script>
         <script src="static/js/plotly-latest.min.js"></script>
+        <script type="text/javascript" src="static/js/tablesorter/jquery-latest.js"></script>
+        <script type="text/javascript" src="static/js/tablesorter/jquery.tablesorter.js"></script>
         <title>Reflux Analyzer</title>
 	</head>
 	<body>
@@ -15,8 +18,9 @@
             <div id="app_control">
                 <div id="models">
                     <p id="models_header">Models:
-                        <button id="create_model" style="margin-left: 136px;" @click="create_model">+</button>
-                        <button @click="delete_model" >-</button>
+                        <button id="create_model" style="margin-left: 44px;" @click="create_model">+</button>
+                        <button id="compere_butt" style="margin-left: 0px;" @click="compereModels">compere models</button>
+                        <!--<button @click="delete_model" >-</button>-->
                     </p>
 
                     <!--<template ref="models_names">-->
@@ -174,6 +178,53 @@
                         <template>
                             <button>predict random image</button>
                         </template>
+                    </div>
+
+                    <div v-if="mode == 'compere_models'" id = "compere_models" style="margin: 20;">
+                        <table id="myTable" class="tablesorter">
+                        <thead>
+                        <tr>
+                            <th>Model Name</th>
+                            <th>Activation</th>
+                            <th>Dropout</th>
+                            <th>#Filters</th>
+                            <th>Pool Size</th>
+                            <th>Train Ratio</th>
+                            <th>Img Rows</th>
+                            <th>Img Cols</th>
+                            <th>Batch</th>
+                            <th>Kernel Size</th>
+                            <th>Sigma</th>
+                            <th>Theta</th>
+                            <th>Lambda</th>
+                            <th>Gamma</th>
+                            <th>Psi</th>
+                            <th>Train Score</th>
+                            <th>Test Score</th>
+                        </tr>
+                        </thead>
+                        <tbody v-for="model in Object.keys(models)">
+                            <tr>
+                                <td>{{ model }}</td>
+                                <td>{{ models[model]["activation_function"] }}</td>
+                                <td>{{ models[model]["dropout"] }}</td>
+                                <td>{{ models[model]["nb_filters"] }}</td>
+                                <td>{{ models[model]["pool_size"] }}</td>
+                                <td>{{ models[model]["train_ratio"] }}</td>
+                                <td>{{ models[model]["img_rows"] }}</td>
+                                <td>{{ models[model]["img_cols"] }}</td>
+                                <td>{{ models[model]["batch_size"] }}</td>
+                                <td>{{ models[model]["kernel_size"] }}</td>
+                                <td>{{ models[model]["sigma"] }}</td>
+                                <td>{{ models[model]["theta"] }}</td>
+                                <td>{{ models[model]["lambd"] }}</td>
+                                <td>{{ models[model]["gamma"] }}</td>
+                                <td>{{ models[model]["psi"] }}</td>
+                                <td>{{ score(['train', model]) }}</td>
+                                <td>{{ score(['test', model]) }}</td>
+                            </tr>
+                        </tbody>
+                        </table>
                     </div>
                 </div>
                 <div id='dialog' ref='dialog' style="display: none">

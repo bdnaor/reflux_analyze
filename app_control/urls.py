@@ -10,4 +10,5 @@ urlpatterns = [
     url(r'^start_train$', views.start_train),
     url(r'^full_plan$', views.full_plan),
     url(r'^good_plan$', views.good_plan),
+    url(r'^random_plan$', views.random_plan),
 ]

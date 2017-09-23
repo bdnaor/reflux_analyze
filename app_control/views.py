@@ -17,6 +17,7 @@ from rest_framework.response import Response
 import os
 
 from manage import ROOT_DIR
+from utils.configurations import load_configurations, get_random_conf
 
 cnn_manager = CNNManager()
 
@@ -92,7 +93,7 @@ def full_plan(request):
                 for activation_function in ['softmax', 'sigmoid']:
                     for img_size in [(50, 50), (75, 75), (100, 100), (150, 150), (200, 200)]:
                         for sigma in [2, 3, 4, 5, 6]:
-                            for theta in [0, 45, 90, 135]:
+                            for theta in [0.3, 45, 90, 135]:
                                 for lammbd in [8, 10, 12]:
                                     for gamma in [0.3, 0.5, 0.7, 0.9]:
                                         for psi in [0, 30, 60, 90]:
@@ -131,6 +132,20 @@ def full_plan(request):
         print e
         return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
     print 'finish all plan'
+
+
+@api_view(['GET', 'POST', ])
+@csrf_exempt
+def random_plan(request):
+    while True:
+        conf = get_random_conf()
+        cnn = CNN(conf)
+        cnn.train_model(1)
+        if 0 in cnn.con_mat_val[-1]:
+            continue
+        else:
+            print 'we find normal model'
+            cnn.train_model(3)
 
 
 @api_view(['GET', 'POST', ])

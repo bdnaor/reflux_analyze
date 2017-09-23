@@ -371,7 +371,6 @@ class CNN(object):
         except Exception as e:
             print traceback.format_exc()
 
-
     def train_model(self, n_epoch=None):
         '''
             saves the model weights after each epoch if the validation loss decreased

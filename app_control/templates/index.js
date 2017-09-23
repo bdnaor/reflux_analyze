@@ -34,6 +34,9 @@ window.onload = function (){
                 this.build_history_view();
                 this.init_accordion();
             }
+            if(this.mode == 'compere_models'){
+                $("#myTable").tablesorter();
+            }
         },
         mounted: function() {
             this.get_models();
@@ -206,12 +209,15 @@ window.onload = function (){
                 });
             },
             getLatestInfo: function (item) {
-                if(item=='train') {
-                    var m = this.models[this.selected_model];
+                if(typeof item === 'string')
+                    item = [item];
+                var model_name = item.length > 1 ? item[1] : this.selected_model
+                if(item[0] == 'train') {
+                    var m = this.models[model_name];
                     var arr = m.con_mat_train[m.con_mat_train.length - 1];
                 }
                 else{
-                    var m = this.models[this.selected_model];
+                    var m = this.models[model_name];
                     var arr = m.con_mat_val[m.con_mat_val.length - 1];
                 }
                 if (arr == undefined){
@@ -353,6 +359,11 @@ window.onload = function (){
             },
             closeDialog: function () {
                 this.$refs['dialog'].style.display = 'none';
+            },
+            compereModels: function(){
+                this.mode = 'compere_models';
+                this.work_header = 'Models Comparison';
+                $("#myTable").tablesorter();
             }
         }
     });
