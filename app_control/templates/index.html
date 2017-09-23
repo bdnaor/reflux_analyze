@@ -203,8 +203,8 @@
                             <th>Test Score</th>
                         </tr>
                         </thead>
-                        <tbody v-for="model in Object.keys(models)">
-                            <tr>
+                        <tbody>
+                            <tr v-for="model in Object.keys(models)">
                                 <td>{{ model }}</td>
                                 <td>{{ models[model]["activation_function"] }}</td>
                                 <td>{{ models[model]["dropout"] }}</td>

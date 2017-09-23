@@ -35,7 +35,13 @@ window.onload = function (){
                 this.init_accordion();
             }
             if(this.mode == 'compere_models'){
-                $("#myTable").tablesorter();
+                var myTextExtraction = function(node)
+                {
+                    // extract data from markup and return it
+                    return node.childNodes[0].nodeValue;
+                }
+                $("#myTable").tablesorter({textExtraction: myTextExtraction});
+//                $("#myTable").tablesorter( {sortList: [[0,0], [1,0]]} );
             }
         },
         mounted: function() {
