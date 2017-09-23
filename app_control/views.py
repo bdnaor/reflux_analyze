@@ -132,6 +132,7 @@ def full_plan(request):
         print e
         return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
     print 'finish all plan'
+    return Response({}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET', 'POST', ])
@@ -154,8 +155,9 @@ def good_plan(request):
     try:
         # cnn = CNN({'model_name': 'good_plan_50', 'img_rows': 50, 'img_cols': 50})
         cnn = CNN({'model_name': 'good_plan_50'}, True)
-        cnn.train_model(7)
+        cnn.train_model(40)
     except Exception as e:
         print e
         return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
-    print 'finish all plan'
+    print 'finish good plan'
+    return Response({}, status=status.HTTP_200_OK)

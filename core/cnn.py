@@ -388,9 +388,10 @@ class CNN(object):
         self.done_train_epoch = 0
         self.total_train_epoch = n_epoch
 
-        # Evaluate the model without any train
-        self._calculate_confusion_matrix()
-        self.save_only_best()
+        # Evaluate the created model at the first time only
+        if not self.con_mat_val:
+            self._calculate_confusion_matrix()
+            self.save_only_best()
 
         # Start train the model
         _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
