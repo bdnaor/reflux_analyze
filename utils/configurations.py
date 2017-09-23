@@ -23,7 +23,7 @@ def get_random_conf():
     configurations = load_configurations()
     while True:
         params = dict()
-        params['model_name'] = "random_model_%s" % len(configurations)
+        params['model_name'] = "random_%s" % len(configurations)
         params['split_cases'] = random.choice([True, False])
         params['dropout'] = random.choice([0.25, 0.5])
         params['activation_function'] = random.choice(['softmax', 'sigmoid'])
