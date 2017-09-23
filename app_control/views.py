@@ -35,12 +35,6 @@ def get_models(request):
 @api_view(['GET', 'POST', ])
 @csrf_exempt
 def add_model(request):
-    model_name = request.POST['model_name']
-    # img_rows = int(request.POST['img_rows'])
-    # img_cols = int(request.POST['img_cols'])
-    # epoch = int(request.POST['epoch'])
-    # kernel_size = int(request.POST['kernel_size'])
-    # pool_size = int(request.POST['pool_size'])
     cnn = CNN(request.POST)
     success, msg = cnn_manager.add_model(cnn)
     if success:
@@ -73,10 +67,6 @@ def start_train(request):
             model_name = request.POST['model_name']
             epoch = int(request.POST['epoch'])
             cnn = cnn_manager.models[model_name]
-            # p = Process(target=cnn.train_model, args=(epoch,))
-            # p.start()
-            # thread = Thread(target=cnn.train_model, args=(epoch,))
-            # thread.start()
             cnn.train_model(epoch)
         return Response({'msg': 'ok'}, status=status.HTTP_200_OK)
     except Exception as e:

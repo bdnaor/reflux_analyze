@@ -57,7 +57,7 @@ class CNN(object):
             self.total_train_epoch = 0
             self.done_train_epoch = 0
         else:
-            self.train_ratio = params.get('train_ratio', 0.5)
+            self.train_ratio = float(params.get('train_ratio', 0.5))
             self.split_cases = params.get('split_cases', True)
             self.img_rows = int(params.get('img_rows', 200))
             self.img_cols = int(params.get('img_cols', 200))
@@ -65,14 +65,14 @@ class CNN(object):
             self.batch_size = int(params.get('batch_size', 32))
             self.epoch = int(params.get('epoch', 5))
             self.nb_filters = int(params.get('nb_filters', 32))  # number of convolution filter to use
-            self.dropout = params.get('dropout', 0.25)
+            self.dropout = float(params.get('dropout', 0.25))
             self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
             # Gabor params
-            self.sigma = params.get('sigma', 0.5)
-            self.theta = params.get('theta', 0.3)
-            self.lambd = params.get('lambd', 0.5)
-            self.gamma = params.get('gamma', 0.3)
-            self.psi = params.get('psi', 0)
+            self.sigma = float(params.get('sigma', 0.5))
+            self.theta = float(params.get('theta', 0.3))
+            self.lambd = float(params.get('lambd', 0.5))
+            self.gamma = float(params.get('gamma', 0.3))
+            self.psi = float(params.get('psi', 0))
 
             self.con_mat_val = []
             self.con_mat_train = []
@@ -270,11 +270,11 @@ class CNN(object):
                 for j in xrange(shape[1]):
                     # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
                     tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]),
-                                                    sigma=float(self.sigma),
-                                                    theta=float(self.theta),
-                                                    lambd=float(self.lambd),
-                                                    gamma=float(self.gamma),
-                                                    psi=float(self.psi),
+                                                    sigma=self.sigma,
+                                                    theta=self.theta,
+                                                    lambd=self.lambd,
+                                                    gamma=self.gamma,
+                                                    psi=self.psi,
                                                     ktype=CV_64F)
                     filter = []
                     for i in xrange(len(tmp_filter)):
