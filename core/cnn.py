@@ -121,14 +121,14 @@ class CNN(object):
         for idx, category in enumerate(self.category):
             category_path = os.path.join(self.adaptation_dataset, category)
             case_folder = os.listdir(category_path)
-            for sub_folder in case_folder[:int(len(case_folder)*self.train_ratio)]:
+            for sub_folder in case_folder[int(len(case_folder)*self.train_ratio):]:
                 case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
                 images = os.listdir(case_folder_path)
                 for im in images:
                     im_path = os.path.join(case_folder_path, im)
                     test_img_matrix.append(np.array(np.array(Image.open(im_path)).flatten()))
                     test_label.append(idx)
-            for sub_folder in case_folder[int(len(case_folder)*self.train_ratio):]:
+            for sub_folder in case_folder[0:int(len(case_folder)*self.train_ratio)]:
                 case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
                 images = os.listdir(case_folder_path)
                 for im in images:
