@@ -215,6 +215,7 @@
                             <th>Lambda</th>
                             <th>Gamma</th>
                             <th>Psi</th>
+                            <th>Iteration</th>
                             <th>Epoch</th>
                             <th>Train Score</th>
                             <th>Test Score</th>
@@ -237,6 +238,7 @@
                                 <td>{{ models[model]["lambd"] }}</td>
                                 <td>{{ models[model]["gamma"] }}</td>
                                 <td>{{ models[model]["psi"] }}</td>
+                                <td>{{ iterationTime(model) }}</td>
                                 <td>{{ models[model].con_mat_train.length }}</td>
                                 <td>{{ score(['train', model]) }}</td>
                                 <td>{{ score(['test', model]) }}</td>

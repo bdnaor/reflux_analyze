@@ -397,6 +397,18 @@ window.onload = function (){
                 this.mode = 'compere_models';
                 this.work_header = 'Models Comparison';
                 $("#myTable").tablesorter();
+            },
+            iterationTime: function(model){
+                var diff = new Date(this.models[model].times_start_test[1])-new Date(this.models[model].times_finish[0]);
+                var hh = Math.floor(diff / 1000 / 60 / 60);
+                diff -= hh * 1000 * 60 * 60;
+                var mm = Math.floor(diff / 1000 / 60);
+                diff -= mm * 1000 * 60;
+                var ss = Math.floor(diff / 1000);
+                diff -= ss * 1000;
+                if (hh > 0)
+                    return hh+':'+mm+':'+ss
+                return mm+':'+ss;
             }
         }
     });
