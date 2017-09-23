@@ -100,5 +100,39 @@
         "sigma": 2,
         "split_cases": true,
         "theta": 0.3
+    },
+    {
+        "activation_function": "sigmoid",
+        "batch_size": 128,
+        "dropout": 0.25,
+        "gamma": 0.5,
+        "img_cols": 75,
+        "img_rows": 75,
+        "kernel_size": 7,
+        "lammbd": 8,
+        "model_name": "random_6",
+        "nb_filters": 32,
+        "pool_size": 4,
+        "psi": 30,
+        "sigma": 3,
+        "split_cases": true,
+        "theta": 45
+    },
+    {
+        "activation_function": "softmax",
+        "batch_size": 64,
+        "dropout": 0.25,
+        "gamma": 0.3,
+        "img_cols": 100,
+        "img_rows": 100,
+        "kernel_size": 10,
+        "lammbd": 10,
+        "model_name": "random_7",
+        "nb_filters": 32,
+        "pool_size": 6,
+        "psi": 90,
+        "sigma": 4,
+        "split_cases": false,
+        "theta": 135
     }
 ]

@@ -20,6 +20,7 @@ class CNNManager(object):
             model_name = _file.split('.')[0]
             models_names.add(model_name)
         for i in models_names:
+            print 'load model %s' % i
             cnn = CNN({'model_name': i}, True)
             self.models[i] = cnn
 

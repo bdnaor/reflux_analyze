@@ -41,7 +41,33 @@ window.onload = function (){
                     return node.childNodes[0].nodeValue;
                 }
                 $("#myTable").tablesorter({textExtraction: myTextExtraction});
-//                $("#myTable").tablesorter( {sortList: [[0,0], [1,0]]} );
+                for (m in this.models){
+                    var custom_id = m.replace(' ','')+"_row";
+                    this.$refs[m][1].id = custom_id;
+
+                    $('#'+custom_id).mouseenter(this.build_handler(custom_id, 'beige'));
+                    $('#'+custom_id).mouseleave(this.build_handler(custom_id, 'white'));
+
+                    // for(var i = 0; i<this.$refs[m][1].children.length; i++){
+                    //     e = this.$refs[m][1].children[i];
+                    //     e.id = custom_id+"_cell_"+i;
+                    //     if (typeof e.id != 'string' || e.id == "" || e ==undefined)
+                    //         return;
+                    //     $('#'+e.id).mouseenter(function (event) {
+                    //         for(var j = 0;j<$(this).parent()[0].children.length; j++) {
+                    //             c = $(this).parent()[0].children[j];
+                    //             c['background-color'] = 'beige';
+                    //         }
+                    //         // event.fromElement.parentElement.children('td, th').css('background-color','beige');
+                    //     });
+                    //
+                    // }
+                    // $('#'+custom_id).bind('hover', function(e) {
+                    //     $(e.currentTarget).children('td, th').css('background-color','beige');
+                    //     $(e.target).closest('tr').children('td,th').css('background-color','#000');
+                    // })
+                }
+
             }
         },
         mounted: function() {
@@ -92,6 +118,11 @@ window.onload = function (){
 			     e.preventDefault();
 			    return false;
 			},
+            build_handler: function (id, myColor) {
+              return function (event) {
+                $('#'+id).children('td, th').css('background-color',myColor);
+              }
+            },
             show_details: function(){
                 this.mode = 'model_details';
                 this.work_header = 'Model Details';
@@ -396,7 +427,6 @@ window.onload = function (){
             compereModels: function(){
                 this.mode = 'compere_models';
                 this.work_header = 'Models Comparison';
-                $("#myTable").tablesorter();
             }
         }
     });

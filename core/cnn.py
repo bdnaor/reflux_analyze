@@ -54,8 +54,6 @@ class CNN(object):
         self.with_gabor = False
         if _reload:
             self._load()
-            self.total_train_epoch = 0
-            self.done_train_epoch = 0
         else:
             self.train_ratio = float(params.get('train_ratio', 0.5))
             self.split_cases = params.get('split_cases', True)
@@ -68,11 +66,11 @@ class CNN(object):
             self.dropout = float(params.get('dropout', 0.25))
             self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
             # Gabor params
-            self.sigma = float(params.get('sigma', 0.5))
-            self.theta = float(params.get('theta', 0.3))
+            self.sigma = float(params.get('sigma', 1))
+            self.theta = float(params.get('theta', 1))
             self.lambd = float(params.get('lambd', 0.5))
             self.gamma = float(params.get('gamma', 0.3))
-            self.psi = float(params.get('psi', 0))
+            self.psi = float(params.get('psi', 1.57))
 
             self.con_mat_val = []
             self.con_mat_train = []
@@ -421,6 +419,27 @@ class CNN(object):
             # tmp = pickle.load(input)
             tmp = json.loads(_input.read())
         self.__dict__.update(tmp)
+        self.total_train_epoch = 0
+        self.done_train_epoch = 0
+        if not hasattr(self, 'times_start_test'):
+            self.times_start_test = []
+        if not hasattr(self, 'times_start_train'):
+            self.times_start_train = []
+        if not hasattr(self, 'times_finish'):
+            self.times_finish = []
+        if not hasattr(self, 'train_ratio'):
+            self.train_ratio = 0.5
+        if not hasattr(self, 'sigma'):
+            self.sigma = 1
+        if not hasattr(self, 'theta'):
+            self.theta = 1
+        if not hasattr(self, 'lambd'):
+            self.lambd = 0.5
+        if not hasattr(self, 'gamma'):
+            self.gamma = 0.3
+        if not hasattr(self, 'psi'):
+            self.psi = 1.57
+
         if hasattr(self, 'with_gabor') and self.with_gabor:
             self._build_model_2()
             self.model.load_weights(self.model_path + '.h5(weights)')
