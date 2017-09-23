@@ -30,11 +30,11 @@ def get_random_conf():
         img_size = random.choice([(50, 50), (75, 75), (100, 100)])  # (150, 150), (200, 200)
         params['img_rows'] = img_size[0]
         params['img_cols'] = img_size[1]
-        params['sigma'] = random.choice([2, 3, 4, 5, 6])
-        params['theta'] = random.choice([0.3, 45, 90, 135])
-        params['lammbd'] = random.choice([8, 10, 12])
-        params['gamma'] = random.choice([0.3, 0.5, 0.7, 0.9])
-        params['psi'] = random.choice([0, 30, 60, 90])
+        params['sigma'] = random.uniform(0, 3)
+        params['theta'] = random.uniform(0, 180)
+        params['lammbd'] = random.uniform(0, 10)
+        params['gamma'] = random.uniform(0, 1)
+        params['psi'] = random.uniform(0, 90)
         params['nb_filters'] = random.choice([32, 64])
         params['kernel_size'] = random.choice([5, 6, 7, 8, 9, 10])
         params['pool_size'] = random.choice([2, 4, 6, 8])

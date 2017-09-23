@@ -270,11 +270,11 @@ class CNN(object):
                 for j in xrange(shape[1]):
                     # gk = gabor_kernel(frequency=0.2, bandwidth=0.1)
                     tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]),
-                                                    sigma=self.sigma,
-                                                    theta=self.theta,
-                                                    lambd=self.lambd,
-                                                    gamma=self.gamma,
-                                                    psi=self.psi,
+                                                    sigma=float(self.sigma),
+                                                    theta=float(self.theta),
+                                                    lambd=float(self.lambd),
+                                                    gamma=float(self.gamma),
+                                                    psi=float(self.psi),
                                                     ktype=CV_64F)
                     filter = []
                     for i in xrange(len(tmp_filter)):

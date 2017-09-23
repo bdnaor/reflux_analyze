@@ -140,9 +140,19 @@ window.onload = function (){
                 var model_name = this.$refs['model_name'].value;
                 var img_rows = this.$refs['img_rows'].value;
                 var img_cols = this.$refs['img_cols'].value;
-                var epoch = this.$refs['epoch'].value;
+//                var epoch = this.$refs['epoch'].value;
                 var kernel_size = this.$refs['kernel_size'].value;
                 var pool_size = this.$refs['pool_size'].value;
+                var activation_function = this.$refs['activation_function'].value;
+                var dropout = this.$refs['dropout'].value;
+                var nb_filters = this.$refs['nb_filters'].value;
+                var train_ratio = this.$refs['train_ratio'].value;
+                var batch_size = this.$refs['batch_size'].value;
+                var sigma = this.$refs['sigma'].value;
+                var theta = this.$refs['theta'].value;
+                var lambd = this.$refs['lambd'].value;
+                var gamma = this.$refs['gamma'].value;
+                var psi = this.$refs['psi'].value;
 
                 // TODO: add validation.
                 var vm = this;
@@ -150,13 +160,27 @@ window.onload = function (){
                     'model_name': model_name,
                     'img_rows': parseInt(img_rows),
                     'img_cols': parseInt(img_cols),
-                    'epoch': parseInt(epoch),
+//                    'epoch': parseInt(epoch),
                     'kernel_size': parseInt(kernel_size),
                     'pool_size': parseInt(pool_size),
+                    'activation_function': activation_function,
+                    'dropout': parseFloat(dropout),
+                    'nb_filters': parseInt(nb_filters),
+                    'dropout': parseFloat(dropout),
+                    'train_ratio': parseFloat(train_ratio),
+                    'batch_size': parseInt(batch_size),
+                    'sigma': parseFloat(sigma),
+                    'theta': parseFloat(theta),
+                    'lambd': parseFloat(lambd),
+                    'gamma': parseFloat(gamma),
+                    'psi': parseFloat(psi),
+
                 },function(data,status){
                     if(status=="success"){
                         // models[model_name] = ;
                         vm.get_models();
+                        vm.selected_model = vm.$refs['model_name'].value;
+                        vm.show_details(vm.selected_model);
                         vm.$refs['model_name'].value = '';
                     }
                     else{
