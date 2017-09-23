@@ -411,21 +411,13 @@ class CNN(object):
 
     def save(self, only_json=False):
         if not only_json and self.with_gabor:
-            self.evaluate_model()
-            # serialize model to JSON
-            model_json = self.model.to_json()
-            with open(self.model_path+'.json(model)', "w") as json_file:
-                json_file.write(model_json)
             self.model.save_weights(self.model_path + '.h5(weights)')
-        elif not only_json:
-            self.model.save(self.model_path + '.h5')
         save_dict = self.get_info()
         with open(self.model_path+'.json', 'wb') as output:
             output.write(json.dumps(save_dict, sort_keys=True, indent=4, separators=(',', ': ')))
 
     def _load(self):
         with open(self.model_path+'.json', 'rb') as _input:
-            # tmp = pickle.load(input)
             tmp = json.loads(_input.read())
         self.__dict__.update(tmp)
         self.total_train_epoch = 0
@@ -450,15 +442,8 @@ class CNN(object):
             self.psi = 1.57
 
         if hasattr(self, 'with_gabor') and self.with_gabor:
-            if not os.path.exists(self.model_path + '.json(model)'):
-                self._build_model_2()
-            else:
-                with open(self.model_path + '.json(model)', "r") as json_file:
-                    loaded_model_json = json_file.read()
-                self.model = model_from_json(loaded_model_json)
-                self.model.load_weights(self.model_path + '.h5(weights)')
-                self.evaluate_model()
-            # self.compile()
+            self._build_model_2()
+            self.model.load_weights(self.model_path + '.h5(weights)')
         elif os.path.exists(self.model_path + '.h5(best)'):
             self.model = load_model(self.model_path + '.h5(best)')
         else:
@@ -525,6 +510,8 @@ class CNN(object):
             _f.write(svg_res)
 
     def evaluate_model(self):
+        if not hasattr(self, 'X_train') or self.X_train is None:
+            return
         # evaluate the model
         scores = self.model.evaluate(self.X_train, self.y_train, verbose=0)
         print("TrainSet: %s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
