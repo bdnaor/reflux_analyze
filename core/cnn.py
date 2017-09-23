@@ -1,29 +1,25 @@
-import json
 import os
-
 import gc
 import traceback
+import json
+import cv2
 
-from random import randint
-
-from keras.models import model_from_json
-from datetime import datetime
 from cv2.cv2 import CV_64F
-import keras.backend as K
+from random import randint
+from datetime import datetime
 import numpy as np
-from keras.callbacks import ModelCheckpoint, LambdaCallback
-from keras.layers import Conv2D
-from keras.optimizers import SGD
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix
-from PIL import Image
+from keras.callbacks import LambdaCallback
+from keras.layers import Conv2D
 from keras.utils import np_utils
 from keras.layers.convolutional import MaxPooling2D
 from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.models import Sequential, save_model, load_model
-import cv2
+from keras.models import Sequential, load_model
+import keras.backend as K
 from theano import shared
+from PIL import Image
 
 from manage import ROOT_DIR
 from utils.prepare_dataset import reshape_images
@@ -31,13 +27,16 @@ from utils.prepare_dataset import reshape_images
 FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
-def calculate_score(confusion_matrix):
+def calculate_score(_confusion_matrix):
     try:
-        tn, fp, fn, tp = confusion_matrix
+        tn, fp, fn, tp = _confusion_matrix
         _recall = float(tp) / (tp + fn)
         _precision = float(tp) / (tp+fp)
         return float(2) / ((float(1) / _recall) + (float(1) / _precision))
+    except ZeroDivisionError:
+        return 0
     except Exception as e:
+        print e.message
         print traceback.format_exc()
         print 'Error: can not calculate score:\ntn %s\nfp %s\nfn %s\n tp %s\n' % (tn, fp, fn, tp)
         return 0
@@ -60,7 +59,7 @@ class CNN(object):
             self.img_cols = int(params.get('img_cols', 200))
             self.nb_channel = int(params.get('nb_channel', 3))
             self.batch_size = int(params.get('batch_size', 32))
-            self.epoch = int(params.get('epoch', 5))
+            # self.epoch = int(params.get('epoch', 5))
             self.nb_filters = int(params.get('nb_filters', 32))  # number of convolution filter to use
             self.dropout = float(params.get('dropout', 0.25))
             self.activation_function = params.get('activation_function', 'softmax')  # 'sigmoid'
@@ -101,7 +100,7 @@ class CNN(object):
             if isinstance(self.kernel_size, int):
                 self.kernel_size = (self.kernel_size, self.kernel_size)
 
-            self._build_model_2()
+            self._build_model()
 
     def load_data_set_split_cases(self):
         # the data set after resize
@@ -224,42 +223,6 @@ class CNN(object):
         self.y_test = np_utils.to_categorical(self.y_test, len(self.category))
 
     def _build_model(self):
-        self.model = Sequential()
-
-        # Layer 1
-        self.model.add(Conv2D(filters=self.nb_filters,
-                              kernel_size=self.kernel_size,
-                              padding='same',
-                              input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
-
-        self.model.add(Activation('relu'))
-        self.model.add(MaxPooling2D(pool_size=self.pool_size))
-
-        # Layer 2
-        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
-        self.model.add(Activation('relu'))
-        self.model.add(MaxPooling2D(pool_size=self.pool_size))
-
-        # Layer 3
-        self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
-        self.model.add(Activation('relu'))
-        self.model.add(MaxPooling2D(pool_size=self.pool_size))
-
-        self.model.add(Dropout(self.dropout))
-        self.model.add(Flatten())
-        self.model.add(Dense(64))
-        self.model.add(Activation('relu'))
-        self.model.add(Dropout(self.dropout))
-
-        self.model.add(Dense(len(self.category)))
-        self.model.add(Activation(self.activation_function))
-
-        # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-        sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-        # binary_accuracy, categorical_accuracy
-        self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
-
-    def _build_model_2(self, reload=False):
         def custom_gabor(shape, dtype=None):
             total_ker = []
             for i in xrange(shape[0]):
@@ -287,33 +250,26 @@ class CNN(object):
             np_tot = shared(np.array(total_ker))
             return K.variable(np_tot, dtype=dtype)
 
-        self.with_gabor = True
-
         self.model = Sequential()
 
         # Layer 1
         self.model.add(Conv2D(filters=self.nb_filters,
                               kernel_size=self.kernel_size,
                               padding='same',
-                              kernel_initializer=custom_gabor,
+                              kernel_initializer=custom_gabor if self.with_gabor else 'glorot_uniform',
                               input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
-
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # Layer 2
         self.model.add(Conv2D(filters=self.nb_filters*2,
                               kernel_size=self.kernel_size,
-                              kernel_initializer=custom_gabor,
+                              kernel_initializer=custom_gabor if self.with_gabor else 'glorot_uniform',
                               padding='same'))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
 
         # # Layer 3
-        # self.model.add(Conv2D(filters=self.nb_filters, kernel_size=self.kernel_size, padding='same'))
-        # self.model.add(Activation('relu'))
-        # self.model.add(MaxPooling2D(pool_size=self.pool_size))
-
         self.model.add(Dropout(self.dropout))
         self.model.add(Flatten())
 
@@ -326,13 +282,9 @@ class CNN(object):
         self.model.add(Dense(len(self.category)))
         self.model.add(Activation(self.activation_function))
 
-        # rsm = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-        # sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
-        # binary_accuracy, categorical_accuracy
-        # self.model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
-        self.compile()
+        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    def save_only_best(self, epoch=None, logs=None):
+    def _save_only_best(self, epoch=None, logs=None):
         scores = [calculate_score(item) for item in self.con_mat_val]
         last_biggest = True
         for i in xrange(len(scores)):
@@ -390,24 +342,18 @@ class CNN(object):
         # Evaluate the created model at the first time only
         if not self.con_mat_val:
             self._calculate_confusion_matrix()
-            self.save_only_best()
+            self._save_only_best()
 
         # Start train the model
-        _confusion_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
-        _save_only_best = LambdaCallback(on_epoch_end=lambda epoch, logs: self.save_only_best(epoch, logs))
+        conf_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
+        save_only_best = LambdaCallback(on_epoch_end=lambda epoch, logs: self._save_only_best(epoch, logs))
         self.hist = self.model.fit(self.X_train,
                                    self.y_train,
                                    batch_size=self.batch_size,
                                    epochs=n_epoch,
                                    verbose=1,
                                    validation_data=(self.X_test, self.y_test),
-                                   callbacks=[_confusion_matrix, _save_only_best])  # check_pointer, check_pointer_best
-
-        # load to self.model the best model
-        self._load()
-
-    def compile(self):
-        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+                                   callbacks=[save_only_best, conf_matrix])
 
     def save(self, only_json=False):
         if not only_json and self.with_gabor:
@@ -442,7 +388,7 @@ class CNN(object):
             self.psi = 1.57
 
         if hasattr(self, 'with_gabor') and self.with_gabor:
-            self._build_model_2()
+            self._build_model()
             self.model.load_weights(self.model_path + '.h5(weights)')
         elif os.path.exists(self.model_path + '.h5(best)'):
             self.model = load_model(self.model_path + '.h5(best)')
@@ -457,17 +403,6 @@ class CNN(object):
         frame = frame.reshape(1, self.nb_channel, self.img_rows, self.img_cols)
         pred = self.model.predict(frame, batch_size=1)
         return self.category[0] if pred[0][0] > pred[0][1] else self.category[1]
-
-    def get_random_frame(self):
-        categories = os.listdir(self.adaptation_dataset)
-        category = randint(0, len(self.category))
-        category_path = os.path.join(self.adaptation_dataset, categories[category])
-        cases = os.listdir(category_path)
-        case_index = randint(0, len(cases)-1)
-        frames = os.listdir(os.path.join(category_path, cases[case_index]))
-        frame_index = randint(0, len(frames)-1)
-        random_frame = os.path.join(category_path, cases[case_index], frames[frame_index])
-        return random_frame, category
 
     def get_info(self):
         return {
@@ -497,8 +432,18 @@ class CNN(object):
             "times_start_test": self.times_start_test,
             "times_start_train": self.times_start_train,
             "times_finish": self.times_finish,
-
         }
+
+    def get_random_frame(self):
+        categories = os.listdir(self.adaptation_dataset)
+        category = randint(0, len(self.category))
+        category_path = os.path.join(self.adaptation_dataset, categories[category])
+        cases = os.listdir(category_path)
+        case_index = randint(0, len(cases)-1)
+        frames = os.listdir(os.path.join(category_path, cases[case_index]))
+        frame_index = randint(0, len(frames)-1)
+        random_frame = os.path.join(category_path, cases[case_index], frames[frame_index])
+        return random_frame, category
 
     def create_model_svg(self):
         # from IPython.display import SVG
@@ -508,13 +453,3 @@ class CNN(object):
         svg_res = model_to_dot(self.model).create(prog='dot', format='svg')
         with open(self.model_path+'.svg','w') as _f:
             _f.write(svg_res)
-
-    def evaluate_model(self):
-        if not hasattr(self, 'X_train') or self.X_train is None:
-            return
-        # evaluate the model
-        scores = self.model.evaluate(self.X_train, self.y_train, verbose=0)
-        print("TrainSet: %s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
-
-        scores = self.model.evaluate(self.X_test, self.y_test, verbose=0)
-        print("TestSet: %s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))

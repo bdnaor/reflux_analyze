@@ -1,19 +1,17 @@
+import os
 import json
 
 from django.shortcuts import render
-
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
-
-from core.cnn import CNN
-from core.cnn_manager import CNNManager
 from rest_framework import status
 from rest_framework.response import Response
-import os
 
 from manage import ROOT_DIR
-from utils.configurations import load_configurations, get_random_conf
+from core.cnn import CNN
+from core.cnn_manager import CNNManager
+from utils.configurations import get_random_conf
 
 cnn_manager = CNNManager()
 

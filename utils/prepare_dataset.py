@@ -7,9 +7,9 @@ import math
 from PIL import Image
 from PIL.Image import LANCZOS
 
-from utils.image_rotate_corp import rotate_image, crop_around_center, largest_rotated_rect
+from utils.image_augmentation import rotate_image, crop_around_center, largest_rotated_rect
 
-TOTAL_IMAGES = 2500
+TOTAL_IMAGES_PER_CASE = 2500
 
 
 def reshape_images(input_dataset_path, adaptation_dataset, img_rows, img_cols):
@@ -33,7 +33,7 @@ def reshape_images(input_dataset_path, adaptation_dataset, img_rows, img_cols):
             file_list = os.listdir(os.path.join(input_dataset_path, folder, sub_folder))
             # equalize between amount of frames a cross all patients
             patient_path = os.path.join(input_dataset_path, folder, sub_folder)
-            for j in xrange(TOTAL_IMAGES-len(file_list)):
+            for j in xrange(TOTAL_IMAGES_PER_CASE-len(file_list)):
                 img_index = randint(0, len(file_list)-1)
 
                 image_path_in = os.path.join(patient_path, file_list[img_index])

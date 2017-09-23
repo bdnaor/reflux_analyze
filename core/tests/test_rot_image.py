@@ -3,7 +3,7 @@ import os
 import cv2
 import math
 import numpy as np
-from utils.image_rotate_corp import rotate_image, crop_around_center, largest_rotated_rect
+from utils.image_augmentation import rotate_image, crop_around_center, largest_rotated_rect
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 im_in_path = os.path.join(ROOT_DIR, '..', '..', 'dataset', 'negative', '004', 'frame871.jpg')

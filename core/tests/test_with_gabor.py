@@ -9,7 +9,7 @@ class TestWithGabor(TestCase):
         cnn = CNN({'model_name': 'kernal_5X5', 'img_rows': 75, 'img_cols': 75, 'kernel_size': (5, 5)})
         cnn.con_mat_train = _con_mat
         cnn.con_mat_val = _con_mat
-        cnn.save_only_best()
+        cnn._save_only_best()
         self.assertTrue(os.path.exists(os.path.join(cnn.model_path + '.h5(weights)')))
         self.assertTrue(os.path.exists(os.path.join(cnn.model_path+'.json')))
         del cnn

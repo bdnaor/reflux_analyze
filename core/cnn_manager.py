@@ -10,7 +10,6 @@ from utils.singleton import singleton
 class CNNManager(object):
     def __init__(self):
         self.models = {}
-        self.last_index = 0
         self.load_models()
 
     def load_models(self):
