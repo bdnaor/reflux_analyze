@@ -146,7 +146,7 @@ def random_plan(request):
             continue
         else:
             print 'we find normal model'
-            cnn.train_model(3)
+            cnn.train_model(10)
 
 
 @api_view(['GET', 'POST', ])
