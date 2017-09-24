@@ -240,8 +240,8 @@
                                 <td>{{ models[model]["psi"] }}</td>
                                 <td>{{ iterationTime(model) }}</td>
                                 <td>{{ models[model].con_mat_train.length }}</td>
-                                <td>{{ score(['train', model]) }}</td>
-                                <td>{{ score(['test', model]) }}</td>
+                                <td>{{ best_score(model, 'train') }}</td>
+                                <td>{{ best_score(model, 'test') }}</td>
                             </tr>
                         </tbody>
                         </table>

@@ -387,6 +387,33 @@ window.onload = function (){
                 Plotly.newPlot('history', data);
 
             },
+            best_score: function(model, set){
+                var scores = [];
+                var arr = [];
+                if(set=='test')
+                    arr = this.models[model].con_mat_val;
+                else
+                    arr = this.models[model].con_mat_train;
+
+                for (var i=0; i < arr.length; i++) {
+                    var tn = arr[i][0];
+                    var fp = arr[i][1];
+                    var fn = arr[i][2];
+                    var tp = arr[i][3]
+                    scores.push(this.calculate_score(tn, fp, fn, tp));
+                }
+                var best = Math.max.apply(Math, scores);
+                return best.toFixed(3);
+            },
+            calculate_score: function(tn, fp, fn, tp){
+                if (((tp + fn) == 0) || ((tp+fp)==0))
+                    return 0;
+                _recall = tp / (tp + fn)
+                _precision = tp / (tp+fp)
+                if (_recall==0 || _precision==0)
+                    return 0;
+                return 2 / ((1 / _recall) + (1 / _precision))
+            },
             init_accordion: function () {
                 var acc = document.getElementsByClassName("accordion");
                 var i;
