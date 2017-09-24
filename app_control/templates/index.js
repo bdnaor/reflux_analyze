@@ -178,6 +178,7 @@ window.onload = function (){
                 var dropout = this.$refs['dropout'].value;
                 var nb_filters = this.$refs['nb_filters'].value;
                 var train_ratio = this.$refs['train_ratio'].value;
+                var split_cases = this.$refs['split_cases'].value;
                 var batch_size = this.$refs['batch_size'].value;
                 var sigma = this.$refs['sigma'].value;
                 var theta = this.$refs['theta'].value;
@@ -199,6 +200,7 @@ window.onload = function (){
                     'nb_filters': parseInt(nb_filters),
                     'dropout': parseFloat(dropout),
                     'train_ratio': parseFloat(train_ratio),
+                    'split_cases': parseInt(split_cases),
                     'batch_size': parseInt(batch_size),
                     'sigma': parseFloat(sigma),
                     'theta': parseFloat(theta),

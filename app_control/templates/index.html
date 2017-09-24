@@ -54,6 +54,7 @@
                         <span><label>Dropout: </label><input type="text" ref="dropout" size="35" value="0.25"> 0-1</span><br/>
                         <span><label>Filters: </label><input type="text" ref="nb_filters" size="35" value="32"> 32/64</span><br/>
                         <span><label>Train Ratio: </label><input type="text" ref="train_ratio" size="35" value="0.6"> 0.5-0.9</span><br/>
+                        <span><label>Split Cases: </label><input type="text" ref="split_cases" size="35" value="true"> true/false</span><br/>
                         <span><label>Batch Size: </label><input type="text" ref="batch_size" size="35" value="32"> 32/64/128/256</span><br/>
                         <span><label>Sigma: </label><input type="text" ref="sigma" size="35" value="1"> 0-3</span><br/>
                         <span><label>Theta: </label><input type="text" ref="theta" size="35" value="1"> 0-180</span><br/>
@@ -77,6 +78,7 @@
                             <span><label>Dropout: </label><input v-bind:value="models[selected_model].dropout" type="text" ref="dropout" size="35" disabled></span><br/>
                             <span><label>Filters: </label><input v-bind:value="models[selected_model].nb_filters" type="text" ref="nb_filters" size="35" disabled></span><br/>
                             <span><label>Train Ratio: </label><input v-bind:value="models[selected_model].train_ratio" type="text" ref="train_ratio" size="35" disabled></span><br/>
+                            <span><label>Split Cases: </label><input v-bind:value="models[selected_model].split_cases" type="text" ref="split_cases" size="35" disabled></span><br/>
                             <span><label>Batch Size: </label><input v-bind:value="models[selected_model].batch_size" type="text" ref="batch_size" size="35" disabled></span><br/>
                             <span><label>Sigma: </label><input v-bind:value="models[selected_model].sigma" type="text" ref="sigma" size="35" disabled></span><br/>
                             <span><label>Theta: </label><input v-bind:value="models[selected_model].theta" type="text" ref="theta" size="35" disabled></span><br/>
@@ -206,6 +208,7 @@
                             <th>#Filters</th>
                             <th>Pool Size</th>
                             <th>Train Ratio</th>
+                            <th>Split Cases</th>
                             <th>Img Rows</th>
                             <th>Img Cols</th>
                             <th>Batch</th>
@@ -229,6 +232,7 @@
                                 <td>{{ models[model]["nb_filters"] }}</td>
                                 <td>{{ models[model]["pool_size"] }}</td>
                                 <td>{{ models[model]["train_ratio"] }}</td>
+                                <td>{{ models[model]["split_cases"] }}</td>
                                 <td>{{ models[model]["img_rows"] }}</td>
                                 <td>{{ models[model]["img_cols"] }}</td>
                                 <td>{{ models[model]["batch_size"] }}</td>

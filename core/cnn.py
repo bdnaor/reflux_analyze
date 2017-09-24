@@ -48,13 +48,16 @@ class CNN(object):
         self.model_path = os.path.join(ROOT_DIR, 'cnn_models', self.model_name)
         self.input_dataset_path = os.path.join(ROOT_DIR, 'dataset')  # the original data set
         self.model = None  # the deep learning model
-        self.split_cases = True
         self.with_gabor = False
         if _reload:
             self._load()
         else:
             self.train_ratio = float(params.get('train_ratio', 0.5))
             self.split_cases = params.get('split_cases', True)
+            if self.split_cases == "false" or self.split_cases == False:
+                self.split_cases = False
+            else:
+                self.split_cases = True
             self.img_rows = int(params.get('img_rows', 200))
             self.img_cols = int(params.get('img_cols', 200))
             self.nb_channel = int(params.get('nb_channel', 3))
@@ -392,8 +395,10 @@ class CNN(object):
             self.model.load_weights(self.model_path + '.h5(weights)')
         elif os.path.exists(self.model_path + '.h5(best)'):
             self.model = load_model(self.model_path + '.h5(best)')
-        else:
+        elif os.path.exists(self.model_path + '.h5'):
             self.model = load_model(self.model_path + '.h5')
+        else:
+            self._build_model()
 
     def predict(self, frame):
         img = Image.open(frame)
@@ -414,6 +419,7 @@ class CNN(object):
             "pool_size": self.pool_size,
             "hist": self.hist,
             "train_ratio": self.train_ratio,
+            "split_cases": self.split_cases,
             "img_rows": self.img_rows,
             "img_cols": self.img_cols,
             "batch_size": self.batch_size,
