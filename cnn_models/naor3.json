@@ -1,0 +1,87 @@
+{
+    "activation_function": "softmax",
+    "batch_size": 32,
+    "category": [
+        "negative",
+        "positive"
+    ],
+    "con_mat_train": [
+        [
+            15000,
+            0,
+            15000,
+            0
+        ],
+        [
+            0,
+            15000,
+            0,
+            15000
+        ],
+        [
+            0,
+            15000,
+            0,
+            15000
+        ]
+    ],
+    "con_mat_val": [
+        [
+            17500,
+            0,
+            20000,
+            0
+        ],
+        [
+            0,
+            17500,
+            0,
+            20000
+        ],
+        [
+            0,
+            17500,
+            0,
+            20000
+        ]
+    ],
+    "done_train_epoch": 3,
+    "dropout": 0.25,
+    "gamma": 0.3,
+    "hist": null,
+    "img_cols": 75,
+    "img_rows": 75,
+    "kernel_size": [
+        3,
+        3
+    ],
+    "lambd": 0.5,
+    "model_name": "naor3",
+    "nb_channel": 3,
+    "nb_filters": 32,
+    "pool_size": [
+        2,
+        2
+    ],
+    "psi": 0.0,
+    "sigma": 0.2,
+    "theta": 0.0,
+    "times_finish": [
+        "2017-09-23 13:44:07",
+        "2017-09-23 13:52:25",
+        "2017-09-23 14:00:52"
+    ],
+    "times_start_test": [
+        "2017-09-23 13:41:12",
+        "2017-09-23 13:49:28",
+        "2017-09-23 13:57:56"
+    ],
+    "times_start_train": [
+        "2017-09-23 13:42:51",
+        "2017-09-23 13:51:04",
+        "2017-09-23 13:59:33"
+    ],
+    "total_train_epoch": 15,
+    "train_ratio": 0.6,
+    "with_gabor": true
+}
