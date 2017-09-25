@@ -54,7 +54,7 @@ class CNN(object):
         else:
             self.train_ratio = float(params.get('train_ratio', 0.5))
             self.split_cases = params.get('split_cases', True)
-            if self.split_cases == "false" or self.split_cases == False:
+            if self.split_cases.lower() == "false" or self.split_cases == False:
                 self.split_cases = False
             else:
                 self.split_cases = True

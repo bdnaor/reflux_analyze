@@ -200,7 +200,7 @@ window.onload = function (){
                     'nb_filters': parseInt(nb_filters),
                     'dropout': parseFloat(dropout),
                     'train_ratio': parseFloat(train_ratio),
-                    'split_cases': parseInt(split_cases),
+                    'split_cases': split_cases,
                     'batch_size': parseInt(batch_size),
                     'sigma': parseFloat(sigma),
                     'theta': parseFloat(theta),
