@@ -33,7 +33,16 @@ def reshape_images(input_dataset_path, adaptation_dataset, img_rows, img_cols):
             file_list = os.listdir(os.path.join(input_dataset_path, folder, sub_folder))
             # equalize between amount of frames a cross all patients
             patient_path = os.path.join(input_dataset_path, folder, sub_folder)
-            for j in xrange(TOTAL_IMAGES_PER_CASE-len(file_list)):
+            number_of_augmentation = TOTAL_IMAGES_PER_CASE-len(file_list)
+
+            # ======================================================================
+            #  TODO: fix image augmentation at picture size 50X50
+            number_of_augmentation = 0
+            for f in file_list:
+                if 'augmentation' in f:
+                    os.remove(os.path.join(input_dataset_path, folder, sub_folder, f))
+            # ======================================================================
+            for j in xrange(number_of_augmentation):
                 img_index = randint(0, len(file_list)-1)
 
                 image_path_in = os.path.join(patient_path, file_list[img_index])
