@@ -4,7 +4,7 @@ window.onload = function (){
     new Vue({
         el: '#app_control',
         data: {
-            title: 'jjjdlkjf',
+            title: '',
             models :{},
             mode: 'start',
             selected_model:'',
@@ -274,6 +274,8 @@ window.onload = function (){
             getLatestInfo: function (item) {
                 if(typeof item === 'string')
                     item = [item];
+                if(item.length == 4)
+                    return {tn:item[0], fp:item[1], fn:item[2], tp:item[3]};
                 var model_name = item.length > 1 ? item[1] : this.selected_model
                 if(item[0] == 'train') {
                     var m = this.models[model_name];
@@ -358,34 +360,63 @@ window.onload = function (){
                 score = ((2/((1/this.tpr(item))+(1/this.precision(item))))/100).toFixed(2);
                 if (score == "NaN")
                     return 0;
-                return score;
+                return score*100;
             },
             getAccuracyDict: function (confusionList, name) {
                 var x_acc = [];
                 var y_acc = [];
+                var y_score = [];
                 for(var i=0; i<confusionList.length; i++){
                     var arr = confusionList[i];
                     var mat = {tn:arr[0], fp:arr[1], fn:arr[2], tp:arr[3]};
                     x_acc.push(i);
                     var tot_true = mat.tn + mat.tp;
                     y_acc.push(((tot_true/(mat.tn+mat.fp+mat.fn+mat.tp))*100).toFixed(2));
+                    y_score.push(this.score(confusionList[i]));
                 }
-                 return {
+                 return [{
                     x: x_acc,
                     y: y_acc,
-                    name: name,
+                    name: "acc_"+name,
+                    mode: "lines",
+                    type: 'scatter',
+                },{
+                    x: x_acc,
+                    y: y_score,
+                    name: "score_"+name,
+                    mode: "lines",
+                    type: 'scatter',
+                }
+                ];
+            },
+            avg_score: function(test_score, train_score){
+                var x=[], avg_score = [];
+                for(var i=0; i<test_score.length; i++){
+                    x.push(i);
+                    avg_score.push((test_score[i] + train_score[i])/2);
+                }
+                return {
+                    x: x,
+                    y: avg_score,
+                    name: "avg_score",
                     mode: "lines",
                     type: 'scatter',
                 };
             },
             build_history_view: function () {
 
-                var acc = this.getAccuracyDict(this.models[this.selected_model].con_mat_train, 'acc');
+                var acc = this.getAccuracyDict(this.models[this.selected_model].con_mat_train, 'train');
 
-                var val_acc = this.getAccuracyDict(this.models[this.selected_model].con_mat_val, 'val_acc');
+                var val_acc = this.getAccuracyDict(this.models[this.selected_model].con_mat_val, 'test');
 
-                var data = [acc, val_acc];
-
+                var data = [];
+                for(e in acc){
+                    data.push(acc[e]);
+                }
+                for(e in val_acc){
+                    data.push(val_acc[e]);
+                }
+                data.push(this.avg_score(acc[1].y, val_acc[1].y))
                 Plotly.newPlot('history', data);
 
             },

@@ -48,7 +48,6 @@ class CNN(object):
         self.model_path = os.path.join(ROOT_DIR, 'cnn_models', self.model_name)
         self.input_dataset_path = os.path.join(ROOT_DIR, 'dataset')  # the original data set
         self.model = None  # the deep learning model
-        self.with_gabor = False
         if _reload:
             self._load()
         else:
@@ -102,6 +101,7 @@ class CNN(object):
                 self.kernel_size = int(self.kernel_size)
             if isinstance(self.kernel_size, int):
                 self.kernel_size = (self.kernel_size, self.kernel_size)
+            self.with_gabor =  params.get('with_gabor', True)
 
             self._build_model()
 
@@ -288,17 +288,22 @@ class CNN(object):
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     def _save_only_best(self, epoch=None, logs=None):
-        scores = [calculate_score(item) for item in self.con_mat_val]
+        avg_scores = [];
+        for i in xrange(len(self.con_mat_val)):
+            train_score = calculate_score(self.con_mat_train[i])
+            test_score = calculate_score(self.con_mat_val[i])
+            avg_scores.append((train_score+test_score)/2)
         last_biggest = True
-        for i in xrange(len(scores)):
-            if scores[i] > scores[-1]:
+        for i in xrange(len(avg_scores)-1):
+            if avg_scores[i] > avg_scores[-1]:
                 last_biggest = False
                 break
         if last_biggest:
-            print 'find best model and save it. score = %s' % (scores[-1],)
+            self.index_best = len(avg_scores)-1
+            print '\nfind best model and save it. avg_scores = %s' % (avg_scores[-1],)
             self.save()
         else:
-            print 'save json only'
+            print '\nsave json only'
             self.save(only_json=True)
 
     def _calculate_confusion_matrix(self, epoch=None, logs=None):
@@ -325,18 +330,21 @@ class CNN(object):
         except Exception as e:
             print traceback.format_exc()
 
-    def train_model(self, n_epoch=None):
-        '''
-            saves the model weights after each epoch if the validation loss decreased
-        '''
-        print 'start load'
+    def load_datasets(self):
+        print '\nstart load'
         if not hasattr(self, 'X_train') or self.X_train is None:
             if self.split_cases:
                 self.load_data_set_split_cases()
                 # self.load_data_set()
             else:
                 self.load_data_set()
-        print 'finish load'
+        print '\nfinish load'
+
+    def train_model(self, n_epoch=None):
+        '''
+            saves the model weights after each epoch if the validation loss decreased
+        '''
+        self.load_datasets()
 
         # Initialize params for progress bar
         self.done_train_epoch = 0
@@ -356,7 +364,7 @@ class CNN(object):
                                    epochs=n_epoch,
                                    verbose=1,
                                    validation_data=(self.X_test, self.y_test),
-                                   callbacks=[save_only_best, conf_matrix])
+                                   callbacks=[conf_matrix, save_only_best])
 
     def save(self, only_json=False):
         if not only_json and self.with_gabor:
@@ -392,7 +400,8 @@ class CNN(object):
 
         if hasattr(self, 'with_gabor') and self.with_gabor:
             self._build_model()
-            self.model.load_weights(self.model_path + '.h5(weights)')
+            if os.path.exists(self.model_path + '.h5(weights)'):
+                self.model.load_weights(self.model_path + '.h5(weights)')
         elif os.path.exists(self.model_path + '.h5(best)'):
             self.model = load_model(self.model_path + '.h5(best)')
         elif os.path.exists(self.model_path + '.h5'):

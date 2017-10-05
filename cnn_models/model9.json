@@ -1,0 +1,38 @@
+{
+    "activation_function": "softmax",
+    "batch_size": 32,
+    "category": [
+        "negative",
+        "positive"
+    ],
+    "con_mat_train": [],
+    "con_mat_val": [],
+    "done_train_epoch": 0,
+    "dropout": 0.25,
+    "gamma": 0.5,
+    "hist": null,
+    "img_cols": 75,
+    "img_rows": 75,
+    "kernel_size": [
+        3,
+        3
+    ],
+    "lambd": 0.5,
+    "model_name": "model9",
+    "nb_channel": 3,
+    "nb_filters": 32,
+    "pool_size": [
+        2,
+        2
+    ],
+    "psi": 1.1,
+    "sigma": 0.3,
+    "split_cases": true,
+    "theta": 0.2,
+    "times_finish": [],
+    "times_start_test": [],
+    "times_start_train": [],
+    "total_train_epoch": 0,
+    "train_ratio": 0.7,
+    "with_gabor": true
+}
