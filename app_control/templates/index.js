@@ -416,8 +416,23 @@ window.onload = function (){
                 for(e in val_acc){
                     data.push(val_acc[e]);
                 }
-                data.push(this.avg_score(acc[1].y, val_acc[1].y))
-                Plotly.newPlot('history', data);
+                data.push(this.avg_score(acc[1].y, val_acc[1].y));
+
+                var layout = {
+                  autosize: false,
+                  width: 1200,
+                  height: 700,
+                  margin: {
+                    l: 50,
+                    r: 50,
+                    b: 100,
+                    t: 100,
+                    pad: 4
+                  },
+                  //paper_bgcolor: '#7f7f7f',
+                  //plot_bgcolor: '#c7c7c7'
+                };
+                Plotly.newPlot('history', data, layout);
 
             },
             best_score: function(model, set){
