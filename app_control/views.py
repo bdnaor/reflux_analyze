@@ -2,16 +2,17 @@ import os
 import json
 
 from django.shortcuts import render
-from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
-
+from django.http import HttpResponse
 from manage import ROOT_DIR
 from core.cnn import CNN
 from core.cnn_manager import CNNManager
 from utils.configurations import get_random_conf
+
+from PIL import Image
 
 cnn_manager = CNNManager()
 
@@ -49,6 +50,24 @@ def predict_images(request, *args, **kwargs):
         return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({'predictions': predictions}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'POST', ])
+@csrf_exempt
+def predict_random_frame(request, *args, **kwargs):
+    try:
+        model_name = request.POST['model_name']
+        data = cnn_manager.get_random_frame(model_name)
+        try:
+            return Response(data, status=status.HTTP_200_OK)
+            # return HttpResponse(data['img'], content_type="image/png")
+        except IOError:
+            red = Image.new('RGBA', (1, 1), (255, 0, 0, 0))
+            response = HttpResponse(content_type="image/png", status=status.HTTP_200_OK)
+            red.save(response, "PNG")
+            return response
+    except Exception as e:
+        return Response({'msg': e.message}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET', 'POST', ])

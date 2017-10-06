@@ -20,6 +20,8 @@ from keras.models import Sequential, load_model
 import keras.backend as K
 from theano import shared
 from PIL import Image
+import StringIO
+import base64
 
 from manage import ROOT_DIR
 from utils.prepare_dataset import reshape_images
@@ -450,15 +452,22 @@ class CNN(object):
         }
 
     def get_random_frame(self):
+        if not hasattr(self, 'adaptation_dataset'):
+            self.load_datasets()
         categories = os.listdir(self.adaptation_dataset)
-        category = randint(0, len(self.category))
+        category = randint(0, len(self.category)-1)
         category_path = os.path.join(self.adaptation_dataset, categories[category])
         cases = os.listdir(category_path)
         case_index = randint(0, len(cases)-1)
         frames = os.listdir(os.path.join(category_path, cases[case_index]))
         frame_index = randint(0, len(frames)-1)
         random_frame = os.path.join(category_path, cases[case_index], frames[frame_index])
-        return random_frame, category
+        prediction = self.predict(random_frame)
+        real = self.category[category]
+        img = open(random_frame, "rb").read()
+        img = base64.b64encode(img)
+        # img = Image.open(random_frame)
+        return {'img': img, 'prediction': prediction, 'real': real}
 
     def create_model_svg(self):
         # from IPython.display import SVG

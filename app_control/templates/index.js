@@ -515,6 +515,22 @@ window.onload = function (){
                 if (hh > 0)
                     return hh+':'+mm+':'+ss
                 return mm+':'+ss;
+            },
+            predictRandom: function () {
+                var model_name = this.selected_model;
+                var vm = this;
+                $.post('/predict_random_frame',{
+                    'model_name': model_name
+                },function(data,status){
+                    if(status=="success"){
+                        // convert to Base64
+                        // var b64Response = window.btoa(data);
+                        $('#predict_random')[0].src = "data:image/png;base64,"+data.img;
+                    }
+                    else{
+                        vm.openDialog(data.msg);
+                    }
+                })
             }
         }
     });

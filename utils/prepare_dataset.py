@@ -71,7 +71,7 @@ def reshape_images(input_dataset_path, adaptation_dataset, img_rows, img_cols):
                 # gray = img.convert('L')d
                 # gray.save(output_dtatset+'\\'+f,'JPEG')
                 path_without_extention = image_path_out.split('.')[0]
-                img.save(path_without_extention, 'JPEG')
+                img.save(path_without_extention, 'PNG')
                 # train_set_size += 1
     # end_reshape = time.time()
     # print 'train set size: %s' % (train_set_size,)

@@ -39,3 +39,7 @@ class CNNManager(object):
 
     def get_models(self):
         return {k: self.models[k].get_info() for k in self.models.keys()}
+
+    def get_random_frame(self, model_name):
+        cnn_model = self.models[model_name]
+        return cnn_model.get_random_frame()
