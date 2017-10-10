@@ -34,6 +34,9 @@ window.onload = function (){
                 this.build_history_view();
                 this.init_accordion();
             }
+            if(this.mode == 'model_predict'){
+                this.init_accordion();
+            }
             if(this.mode == 'compere_models'){
                 var myTextExtraction = function(node)
                 {
@@ -526,6 +529,9 @@ window.onload = function (){
                         // convert to Base64
                         // var b64Response = window.btoa(data);
                         $('#predict_random')[0].src = "data:image/png;base64,"+data.img;
+                        $('#real_value').text("Real Value: "+data.real);
+                        $('#predict_value').text("Prediction: "+data.prediction);
+
                     }
                     else{
                         vm.openDialog(data.msg);

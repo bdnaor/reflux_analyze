@@ -160,43 +160,53 @@
                     </div>
 
                     <div v-if="mode == 'model_predict'" id="model_predict" style="margin: 20;">
-                        <h1 style="width: 100%;">Using Model: {{selected_model}}</h1>
-                        <template>
-                            <div class="container">
-                              <!--UPLOAD-->
-                              <form enctype="multipart/form-data" novalidate v-if="isInitial || isSaving">
-                                <h2>Upload images</h2>
-                                <div class="dropbox">
-                                  <input type="file" multiple :name="uploadFieldName" :disabled="isSaving" @change="filesChange($event.target.name, $event.target.files); fileCount = $event.target.files.length" accept="image/*" class="input-file">
-                                    <p v-if="isInitial">
-                                      Drag your file(s) here to begin<br> or click to browse
-                                    </p>
-                                    <p v-if="isSaving">
-                                      Uploading {{ fileCount }} files...
-                                    </p>
-                                </div>
-                              </form>
-                                <div v-if="isSuccess">
-                                    <button @click="reset">Predict Others</button>
-                                    <div style="display: grid; grid-template-columns: 30% 30% 30%;grid-gap: 3%;">
-                                        <template  v-for="img in Object.keys(predict_result)">
-                                            <div v-bind:class="['prediction', predict_result[img]['result']]" style="display: grid;">
-                                                  <!--style="width: 150px; height: 150px;"-->
-                                                <center>
-                                                    <img v-bind:ref="img">
-                                                    <label style="text-align:center;">{{ img }}</label>
-                                                    <label style="text-align:center;">{{ predict_result[img]['result'] }}</label>
-                                                </center>
-                                            </div>
-                                        </template>
+                        <button class="accordion"><label style="margin-left: 20px;"><b><i>predict upload images</i></b></label><br/></button>
+                        <div class="panel" style="margin: 20px;">
+                            <h1 style="width: 100%;">Using Model: {{selected_model}}</h1>
+                            <template>
+                                <div class="container">
+                                  <!--UPLOAD-->
+                                  <form enctype="multipart/form-data" novalidate v-if="isInitial || isSaving">
+                                    <h2>Upload images</h2>
+                                    <div class="dropbox">
+                                      <input type="file" multiple :name="uploadFieldName" :disabled="isSaving" @change="filesChange($event.target.name, $event.target.files); fileCount = $event.target.files.length" accept="image/*" class="input-file">
+                                        <p v-if="isInitial">
+                                          Drag your file(s) here to begin<br> or click to browse
+                                        </p>
+                                        <p v-if="isSaving">
+                                          Uploading {{ fileCount }} files...
+                                        </p>
                                     </div>
-                                </div>
-                             </div>
-                        </template>
-                        <template>
-                            <button @click="predictRandom">predict random image</button>
-                            <img id="predict_random" src="" style="width: 60px;height: 60px;border: 1px">
-                        </template>
+                                  </form>
+                                    <div v-if="isSuccess">
+                                        <button @click="reset">Predict Others</button>
+                                        <div style="display: grid; grid-template-columns: 30% 30% 30%;grid-gap: 3%;">
+                                            <template  v-for="img in Object.keys(predict_result)">
+                                                <div v-bind:class="['prediction', predict_result[img]['result']]" style="display: grid;">
+                                                      <!--style="width: 150px; height: 150px;"-->
+                                                    <center>
+                                                        <img v-bind:ref="img">
+                                                        <label style="text-align:center;">{{ img }}</label>
+                                                        <label style="text-align:center;">{{ predict_result[img]['result'] }}</label>
+                                                    </center>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                 </div>
+                            </template>
+                        </div>
+                        <button class="accordion"><label style="margin-left: 20px;"><b><i>predict random image</i></b></label><br/></button>
+                        <div class="panel" style="margin: 20px;">
+                            <template>
+                                <button @click="predictRandom">predict random image</button></br>
+                                <center>
+                                    <img id="predict_random" src="" style="width: 75px;height: 75px;border: 1px"></br>
+                                    <label id="real_value">Real Value: </label></br>
+                                    <label id="predict_value">Prediction: </label></br>
+                                </center>
+                            </template>
+                        </div>
                     </div>
 
                     <div v-if="mode == 'compere_models'" id = "compere_models" style="margin: 20;">

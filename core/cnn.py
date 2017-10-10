@@ -83,7 +83,7 @@ class CNN(object):
             self.category = ["negative", "positive"]
             self.total_train_epoch = 0
             self.done_train_epoch = 0
-
+            self.index_best = 0
             # the data set for train and validation
             self.X_train = None
             self.X_test = None
@@ -103,7 +103,7 @@ class CNN(object):
                 self.kernel_size = int(self.kernel_size)
             if isinstance(self.kernel_size, int):
                 self.kernel_size = (self.kernel_size, self.kernel_size)
-            self.with_gabor =  params.get('with_gabor', True)
+            self.with_gabor = params.get('with_gabor', True)
 
             self._build_model()
 
@@ -289,12 +289,16 @@ class CNN(object):
 
         self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    def _save_only_best(self, epoch=None, logs=None):
+    def _get_avg_score_list(self):
         avg_scores = [];
         for i in xrange(len(self.con_mat_val)):
             train_score = calculate_score(self.con_mat_train[i])
             test_score = calculate_score(self.con_mat_val[i])
             avg_scores.append((train_score+test_score)/2)
+        return avg_scores
+
+    def _save_only_best(self, epoch=None, logs=None):
+        avg_scores = self._get_avg_score_list()
         last_biggest = True
         for i in xrange(len(avg_scores)-1):
             if avg_scores[i] > avg_scores[-1]:
@@ -375,6 +379,11 @@ class CNN(object):
         with open(self.model_path+'.json', 'wb') as output:
             output.write(json.dumps(save_dict, sort_keys=True, indent=4, separators=(',', ': ')))
 
+    def _find_index_best(self):
+        avg_scores = self._get_avg_score_list()
+        return avg_scores.index(min(avg_scores))
+
+
     def _load(self):
         with open(self.model_path+'.json', 'rb') as _input:
             tmp = json.loads(_input.read())
@@ -399,6 +408,8 @@ class CNN(object):
             self.gamma = 0.3
         if not hasattr(self, 'psi'):
             self.psi = 1.57
+        if not hasattr(self, 'index_best'):
+            self.index_best = self._find_index_best()
 
         if hasattr(self, 'with_gabor') and self.with_gabor:
             self._build_model()
@@ -449,6 +460,7 @@ class CNN(object):
             "times_start_test": self.times_start_test,
             "times_start_train": self.times_start_train,
             "times_finish": self.times_finish,
+            "index_best": self.index_best
         }
 
     def get_random_frame(self):
