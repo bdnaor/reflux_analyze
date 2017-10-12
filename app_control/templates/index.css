@@ -212,6 +212,12 @@ div.panel {
     text-align: center;
     /*padding-top: 20px;*/
 }
+.l1{
+position:relative;
+display: inline-block;
+float:left;
+padding:10px;
+}
 /*.model_table:hover {*/
     /*background-color: beige;*/
             /*!*rgba(79, 151, 212, 0.81);*!*/
