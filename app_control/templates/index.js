@@ -13,7 +13,8 @@ window.onload = function (){
             uploadError: null,
             currentStatus: null,
             uploadFieldName: 'photos',
-            predict_result : {}
+            predict_result : {},
+            L1_Out: []
         },
         computed: {
           isInitial: function() {
@@ -188,6 +189,7 @@ window.onload = function (){
                 var lambd = this.$refs['lambd'].value;
                 var gamma = this.$refs['gamma'].value;
                 var psi = this.$refs['psi'].value;
+                var with_gabor = this.$refs['with_gabor'].value;
 
                 // TODO: add validation.
                 var vm = this;
@@ -210,6 +212,7 @@ window.onload = function (){
                     'lambd': parseFloat(lambd),
                     'gamma': parseFloat(gamma),
                     'psi': parseFloat(psi),
+                    'with_gabor': with_gabor
 
                 },function(data,status){
                     if(status=="success"){
@@ -531,6 +534,7 @@ window.onload = function (){
                         $('#predict_random')[0].src = "data:image/png;base64,"+data.img;
                         $('#real_value').text("Real Value: "+data.real);
                         $('#predict_value').text("Prediction: "+data.prediction);
+                        vm.L1_Out = data.L1_Out;
 
                     }
                     else{
