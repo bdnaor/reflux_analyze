@@ -3,7 +3,7 @@ import gc
 import traceback
 import json
 import cv2
-
+import io
 from cv2.cv2 import CV_64F
 from random import randint
 from datetime import datetime
@@ -104,6 +104,10 @@ class CNN(object):
             if isinstance(self.kernel_size, int):
                 self.kernel_size = (self.kernel_size, self.kernel_size)
             self.with_gabor = params.get('with_gabor', True)
+            if self.with_gabor.lower() == "false" or self.with_gabor == False:
+                self.with_gabor = False
+            else:
+                self.with_gabor = True
 
             self._build_model()
 
@@ -131,14 +135,14 @@ class CNN(object):
                 images = os.listdir(case_folder_path)
                 for im in images:
                     im_path = os.path.join(case_folder_path, im)
-                    test_img_matrix.append(np.array(np.array(Image.open(im_path)).flatten()))
+                    test_img_matrix.append(np.array(Image.open(im_path)).transpose(2, 0, 1))
                     test_label.append(idx)
             for sub_folder in case_folder[0:int(len(case_folder)*self.train_ratio)]:
                 case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
                 images = os.listdir(case_folder_path)
                 for im in images:
                     im_path = os.path.join(case_folder_path, im)
-                    train_img_matrix.append(np.array(np.array(Image.open(im_path)).flatten()))
+                    train_img_matrix.append(np.array(Image.open(im_path)).transpose(2, 0, 1))
                     train_label.append(idx)
 
         train_img_matrix = np.array(train_img_matrix)
@@ -159,8 +163,8 @@ class CNN(object):
         self.y_test = test_label
 
         # reshape the data
-        self.X_train = self.X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
-        self.X_test = self.X_test.reshape(self.X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+        # self.X_train = self.X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
+        # self.X_test = self.X_test.reshape(self.X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
 
         self.X_train = self.X_train.astype('float32')
         self.X_test = self.X_test.astype('float32')
@@ -209,7 +213,7 @@ class CNN(object):
 
         # random_state for psudo random
         # the data set load, shuffled and split between train and validation sets
-        data, label = shuffle(img_matrix, label, random_state=7) #random_state=2
+        data, label = shuffle(img_matrix, label, random_state=7)  # random_state=2
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, label, test_size=0.2, random_state=7)
 
         # reshape the data
@@ -261,7 +265,7 @@ class CNN(object):
         self.model.add(Conv2D(filters=self.nb_filters,
                               kernel_size=self.kernel_size,
                               padding='same',
-                              kernel_initializer=custom_gabor if self.with_gabor else 'glorot_uniform',
+                              kernel_initializer=custom_gabor if self.with_gabor else 'random_normal',
                               input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
@@ -269,7 +273,7 @@ class CNN(object):
         # Layer 2
         self.model.add(Conv2D(filters=self.nb_filters*2,
                               kernel_size=self.kernel_size,
-                              kernel_initializer=custom_gabor if self.with_gabor else 'glorot_uniform',
+                              kernel_initializer=custom_gabor if self.with_gabor else 'random_normal',
                               padding='same'))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
@@ -296,6 +300,32 @@ class CNN(object):
             test_score = calculate_score(self.con_mat_val[i])
             avg_scores.append((train_score+test_score)/2)
         return avg_scores
+
+    # from keras import backend as K
+    def get_activations(self, layer, frame_path):
+        frame = np.array(Image.open(frame_path)).transpose(2, 0, 1)
+        y = [1]
+        y.extend(frame.shape)
+        frame = frame.reshape(tuple(y))
+        inp = self.model.input  # input placeholder
+        outputs = [_layer.output for _layer in self.model.layers]  # all layer outputs
+        functor = K.function([inp] + [K.learning_phase()], outputs)  # evaluation function
+        # get_activations = K.function([self.model.layers[0].input, K.learning_phase()], self.model.layers[layer].output)
+        # activations = get_activations([frame, 1])
+        layer_outs = functor([frame, 1.])
+        activations = layer_outs[layer]
+        imgs = []
+        for i in range(len(activations[0])):
+            img = Image.fromarray(activations[0][i])  # 'RGB'
+            in_mem_file = io.BytesIO()
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            img.save(in_mem_file, format="PNG")
+            # reset file pointer to start
+            in_mem_file.seek(0)
+            img_bytes = in_mem_file.read()
+            imgs.append("data:image/png;base64,%s" % (base64.b64encode(img_bytes),))
+        return imgs
 
     def _save_only_best(self, epoch=None, logs=None):
         avg_scores = self._get_avg_score_list()
@@ -373,7 +403,7 @@ class CNN(object):
                                    callbacks=[conf_matrix, save_only_best])
 
     def save(self, only_json=False):
-        if not only_json and self.with_gabor:
+        if not only_json:
             self.model.save_weights(self.model_path + '.h5(weights)')
         save_dict = self.get_info()
         with open(self.model_path+'.json', 'wb') as output:
@@ -382,7 +412,6 @@ class CNN(object):
     def _find_index_best(self):
         avg_scores = self._get_avg_score_list()
         return avg_scores.index(min(avg_scores))
-
 
     def _load(self):
         with open(self.model_path+'.json', 'rb') as _input:
@@ -474,12 +503,16 @@ class CNN(object):
         frames = os.listdir(os.path.join(category_path, cases[case_index]))
         frame_index = randint(0, len(frames)-1)
         random_frame = os.path.join(category_path, cases[case_index], frames[frame_index])
+        return random_frame, self.category[category]
+
+    def get_random_prediction(self):
+        random_frame, real = self.get_random_frame()
         prediction = self.predict(random_frame)
-        real = self.category[category]
         img = open(random_frame, "rb").read()
         img = base64.b64encode(img)
+        L1_Out = self.get_activations(0, random_frame)
         # img = Image.open(random_frame)
-        return {'img': img, 'prediction': prediction, 'real': real}
+        return {'img': img, 'prediction': prediction, 'real': real, 'L1_Out': L1_Out}
 
     def create_model_svg(self):
         # from IPython.display import SVG

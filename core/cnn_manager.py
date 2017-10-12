@@ -42,4 +42,4 @@ class CNNManager(object):
 
     def get_random_frame(self, model_name):
         cnn_model = self.models[model_name]
-        return cnn_model.get_random_frame()
+        return cnn_model.get_random_prediction()
