@@ -22,7 +22,7 @@ from theano import shared
 from PIL import Image
 import StringIO
 import base64
-
+from scipy.misc import toimage
 from manage import ROOT_DIR
 from utils.prepare_dataset import reshape_images
 
@@ -302,7 +302,7 @@ class CNN(object):
         return avg_scores
 
     # from keras import backend as K
-    def get_activations(self, layer, frame_path):
+    def get_activations(self, frame_path):
         frame = np.array(Image.open(frame_path)).transpose(2, 0, 1)
         y = [1]
         y.extend(frame.shape)
@@ -312,19 +312,21 @@ class CNN(object):
         functor = K.function([inp] + [K.learning_phase()], outputs)  # evaluation function
         # get_activations = K.function([self.model.layers[0].input, K.learning_phase()], self.model.layers[layer].output)
         # activations = get_activations([frame, 1])
-        layer_outs = functor([frame, 1.])
-        activations = layer_outs[layer]
-        imgs = []
-        for i in range(len(activations[0])):
-            img = Image.fromarray(activations[0][i])  # 'RGB'
-            in_mem_file = io.BytesIO()
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
-            img.save(in_mem_file, format="PNG")
-            # reset file pointer to start
-            in_mem_file.seek(0)
-            img_bytes = in_mem_file.read()
-            imgs.append("data:image/png;base64,%s" % (base64.b64encode(img_bytes),))
+        layer_outs = functor([frame, 0.])
+        imgs = {0: [], 3: []}
+        for lay in imgs.keys():
+            activations = layer_outs[lay]
+            for i in range(len(activations[0])):
+                # img = Image.fromarray(activations[0][i])  # 'RGB'
+                img = toimage(activations[0][i])
+                in_mem_file = io.BytesIO()
+                # if img.mode != 'RGB':
+                #     img = img.convert('RGB')
+                img.save(in_mem_file, format="PNG")
+                # reset file pointer to start
+                in_mem_file.seek(0)
+                img_bytes = in_mem_file.read()
+                imgs[lay].append("data:image/png;base64,%s" % (base64.b64encode(img_bytes),))
         return imgs
 
     def _save_only_best(self, epoch=None, logs=None):
@@ -510,9 +512,9 @@ class CNN(object):
         prediction = self.predict(random_frame)
         img = open(random_frame, "rb").read()
         img = base64.b64encode(img)
-        L1_Out = self.get_activations(0, random_frame)
+        L_Out = self.get_activations(random_frame)
         # img = Image.open(random_frame)
-        return {'img': img, 'prediction': prediction, 'real': real, 'L1_Out': L1_Out}
+        return {'img': img, 'prediction': prediction, 'real': real, 'L_Out': L_Out}
 
     def create_model_svg(self):
         # from IPython.display import SVG

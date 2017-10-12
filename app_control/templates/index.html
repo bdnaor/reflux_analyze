@@ -206,9 +206,13 @@
                                     <img id="predict_random" src="" style="width: 75px;height: 75px;border: 1px"></br>
                                     <label id="real_value">Real Value: </label></br>
                                     <label id="predict_value">Prediction: </label></br>
-                                    <div v-for="img in L1_Out">
-                                        <img v-bind:src="img" class="l1">
-                                    </div>
+                                    <template v-for="layer in Object.keys(L_Out)">
+                                        <div style="clear: left;">
+                                            <div v-for="img in L_Out[layer]">
+                                                <img v-bind:src="img" class="l1">
+                                            </div>
+                                        </div>
+                                    </template>
                                 </center>
                             </template>
                         </div>

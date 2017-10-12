@@ -14,7 +14,7 @@ window.onload = function (){
             currentStatus: null,
             uploadFieldName: 'photos',
             predict_result : {},
-            L1_Out: []
+            L_Out: {}
         },
         computed: {
           isInitial: function() {
@@ -534,7 +534,7 @@ window.onload = function (){
                         $('#predict_random')[0].src = "data:image/png;base64,"+data.img;
                         $('#real_value').text("Real Value: "+data.real);
                         $('#predict_value').text("Prediction: "+data.prediction);
-                        vm.L1_Out = data.L1_Out;
+                        vm.L_Out = data.L_Out;
 
                     }
                     else{
