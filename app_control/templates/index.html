@@ -61,7 +61,7 @@
                         <span><label>Lambda: </label><input type="text" ref="lambd" size="35" value="0.5"> 0-15</span><br/>
                         <span><label>Gamma: </label><input type="text" ref="gamma" size="35" value="0.5"> 0-1</span><br/>
                         <span><label>Psi: </label><input type="text" ref="psi" size="35" value="1.57"> 0-90</span><br/>
-                        <span><label>With Gabor: </label><input type="text" ref="with_gabor" size="35" value="true"> true/false</span><br/>
+                        <span><label>Use Gabor: </label><input type="text" ref="with_gabor" size="35" value="true"> true/false</span><br/>
 
                         <button style="margin-left: 240px;margin-top: 38px;margin-bottom: 40px;" @click="post_create">create</button>
                     </div>
@@ -71,6 +71,7 @@
                         <button class="accordion"><label style="margin-left: 20px;"><b><i>Created Info</i></b></label><br/></button>
                         <div id="created_info" class="panel" style="margin: 20px;">
                             <span><label>Model Name: </label><input v-bind:value="selected_model" type="text" ref="model_name" size="35" disabled></span><br/>
+                            <span><label>Use Gabor: </label><input v-bind:value="models[selected_model].with_gabor" type="text" ref="with_gabor" size="35" disabled></span><br/>
                             <span><label>Image Rows: </label><input v-bind:value="models[selected_model].img_rows" type="text" ref="img_rows" size="35" disabled></span><br/>
                             <span><label>Image Columns: </label><input v-bind:value="models[selected_model].img_cols" type="text" ref="img_cols" size="35" disabled></span><br/>
                             <span><label>Epoch: </label><input v-bind:value="models[selected_model].con_mat_train.length" type="text" ref="epoch" size="35" disabled></span><br/>
@@ -223,6 +224,7 @@
                         <thead>
                         <tr>
                             <th>Model Name</th>
+                            <th>Gabor</th>
                             <th>Activation</th>
                             <th>Dropout</th>
                             <th>#Filters</th>
@@ -242,11 +244,13 @@
                             <th>Epoch</th>
                             <th>Train Score</th>
                             <th>Test Score</th>
+                            <th>AVG Score</th>
                         </tr>
                         </thead>
                         <tbody>
                             <tr v-for="model in Object.keys(models)" v-bind:ref="model">
                                 <td>{{ model }}</td>
+                                <td>{{ models[model]["with_gabor"] }}</td>
                                 <td>{{ models[model]["activation_function"] }}</td>
                                 <td>{{ models[model]["dropout"] }}</td>
                                 <td>{{ models[model]["nb_filters"] }}</td>
@@ -266,6 +270,7 @@
                                 <td>{{ models[model].con_mat_train.length }}</td>
                                 <td>{{ best_score(model, 'train') }}</td>
                                 <td>{{ best_score(model, 'test') }}</td>
+                                <td>{{ get_avg_score(model) }}</td>
                             </tr>
                         </tbody>
                         </table>

@@ -277,7 +277,7 @@ window.onload = function (){
                   }
                 });
             },
-            getLatestInfo: function (item) {
+            getInfoOfBest: function (item) {
                 if(typeof item === 'string')
                     item = [item];
                 if(item.length == 4)
@@ -285,11 +285,11 @@ window.onload = function (){
                 var model_name = item.length > 1 ? item[1] : this.selected_model
                 if(item[0] == 'train') {
                     var m = this.models[model_name];
-                    var arr = m.con_mat_train[m.con_mat_train.length - 1];
+                    var arr = m.con_mat_train[m.index_best];
                 }
                 else{
                     var m = this.models[model_name];
-                    var arr = m.con_mat_val[m.con_mat_val.length - 1];
+                    var arr = m.con_mat_val[m.index_best];
                 }
                 if (arr == undefined){
                     return {tn:0, fp:0, fn:0, tp:0};
@@ -297,20 +297,20 @@ window.onload = function (){
                 return {tn:arr[0], fp:arr[1], fn:arr[2], tp:arr[3]};
             },
             total_population: function (item) {
-                var m = this.getLatestInfo(item);
+                var m = this.getInfoOfBest(item);
                 return (m.tp + m.tn + m.fp + m.fn);
             },
             true_positive: function (item) {
-                return this.getLatestInfo(item).tp
+                return this.getInfoOfBest(item).tp
             },
             true_negative: function (item) {
-                return this.getLatestInfo(item).tn
+                return this.getInfoOfBest(item).tn
             },
             false_positive: function (item) {
-                return this.getLatestInfo(item).fp
+                return this.getInfoOfBest(item).fp
             },
             false_negative: function (item) {
-                return this.getLatestInfo(item).fn
+                return this.getInfoOfBest(item).fn
             },
             prevalence: function (item) {
                 var tot_pos = this.true_negative(item) + this.false_positive(item);
@@ -449,15 +449,20 @@ window.onload = function (){
                 else
                     arr = this.models[model].con_mat_train;
 
-                for (var i=0; i < arr.length; i++) {
-                    var tn = arr[i][0];
-                    var fp = arr[i][1];
-                    var fn = arr[i][2];
-                    var tp = arr[i][3]
-                    scores.push(this.calculate_score(tn, fp, fn, tp));
-                }
-                var best = Math.max.apply(Math, scores);
-                return best.toFixed(3);
+//                for (var i=0; i < arr.length; i++) {
+//                    var tn = arr[i][0];
+//                    var fp = arr[i][1];
+//                    var fn = arr[i][2];
+//                    var tp = arr[i][3]
+//                    scores.push(this.calculate_score(tn, fp, fn, tp));
+//                }
+//                var best = Math.max.apply(Math, scores);
+//                var best = this.calculate_score(...arr[this.models[model].index_best]);
+//                return best.toFixed(3);
+               index_best = this.models[model].index_best;
+               if (arr[index_best] != undefined)
+                    return this.calculate_score(...arr[index_best]).toFixed(3);
+               return 0;
             },
             calculate_score: function(tn, fp, fn, tp){
                 if (((tp + fn) == 0) || ((tp+fp)==0))
@@ -541,6 +546,13 @@ window.onload = function (){
                         vm.openDialog(data.msg);
                     }
                 })
+            },
+            get_avg_score: function(model){
+                test_score = this.best_score(model, 'test');
+                train_score = this.best_score(model, 'train');
+                avg = (parseFloat(test_score) + parseFloat(train_score))/2;
+                return avg.toFixed(3);
+
             }
         }
     });
