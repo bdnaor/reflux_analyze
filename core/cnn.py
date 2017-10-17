@@ -231,7 +231,7 @@ class CNN(object):
         self.y_train = np_utils.to_categorical(self.y_train, len(self.category))
         self.y_test = np_utils.to_categorical(self.y_test, len(self.category))
 
-    def _build_model(self):
+    def get_custom_gabor(self):
         def custom_gabor(shape, dtype=None):
             total_ker = []
             for i in xrange(shape[0]):
@@ -258,6 +258,9 @@ class CNN(object):
                 total_ker.append(kernels)
             np_tot = shared(np.array(total_ker))
             return K.variable(np_tot, dtype=dtype)
+        return custom_gabor
+
+    def _build_model(self):
 
         self.model = Sequential()
 
@@ -265,7 +268,7 @@ class CNN(object):
         self.model.add(Conv2D(filters=self.nb_filters,
                               kernel_size=self.kernel_size,
                               padding='same',
-                              kernel_initializer=custom_gabor if self.with_gabor else 'random_normal',
+                              kernel_initializer=self.get_custom_gabor() if self.with_gabor else 'random_normal',
                               input_shape=(self.nb_channel, self.img_rows, self.img_cols)))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
@@ -273,7 +276,7 @@ class CNN(object):
         # Layer 2
         self.model.add(Conv2D(filters=self.nb_filters*2,
                               kernel_size=self.kernel_size,
-                              kernel_initializer=custom_gabor if self.with_gabor else 'random_normal',
+                              kernel_initializer=self.get_custom_gabor() if self.with_gabor else 'random_normal',
                               padding='same'))
         self.model.add(Activation('relu'))
         self.model.add(MaxPooling2D(pool_size=self.pool_size))
