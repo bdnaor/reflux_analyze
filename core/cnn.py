@@ -55,10 +55,11 @@ class CNN(object):
         else:
             self.train_ratio = float(params.get('train_ratio', 0.5))
             self.split_cases = params.get('split_cases', True)
-            if self.split_cases.lower() == "false" or self.split_cases == False:
-                self.split_cases = False
-            else:
-                self.split_cases = True
+            if type(self.split_cases) is not bool:
+                if self.split_cases.lower() == "false" or self.split_cases == False:
+                    self.split_cases = False
+                else:
+                    self.split_cases = True
             self.img_rows = int(params.get('img_rows', 200))
             self.img_cols = int(params.get('img_cols', 200))
             self.nb_channel = int(params.get('nb_channel', 3))
@@ -104,10 +105,11 @@ class CNN(object):
             if isinstance(self.kernel_size, int):
                 self.kernel_size = (self.kernel_size, self.kernel_size)
             self.with_gabor = params.get('with_gabor', True)
-            if self.with_gabor.lower() == "false" or self.with_gabor == False:
-                self.with_gabor = False
-            else:
-                self.with_gabor = True
+            if type(self.with_gabor) is not bool:
+                if self.with_gabor.lower() == "false" or self.with_gabor == False:
+                    self.with_gabor = False
+                else:
+                    self.with_gabor = True
 
             self._build_model()
 
@@ -214,7 +216,7 @@ class CNN(object):
         # random_state for psudo random
         # the data set load, shuffled and split between train and validation sets
         data, label = shuffle(img_matrix, label, random_state=7)  # random_state=2
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, label, test_size=0.2, random_state=7)
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, label, test_size=1-self.train_ratio, random_state=7)
 
         # reshape the data
         self.X_train = self.X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
@@ -234,15 +236,17 @@ class CNN(object):
     def get_custom_gabor(self):
         def custom_gabor(shape, dtype=None):
             total_ker = []
-            for i in xrange(shape[0]):
+            # for i in xrange(shape[0]):
+            for theta in np.arange(0, np.pi, np.pi / shape[0]):
                 kernels = []
-                for j in xrange(shape[1]):
+                # for j in xrange(shape[1]):
+                for gamma in np.arange(0.02, 0.9, 0.9 / shape[1]):
                     # sigma=1, theta=1, lambd=0.5, gamma=0.3, psi=(3.14) * 0.5 = 1.57,
                     tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]),
                                                     sigma=self.sigma,
-                                                    theta=self.theta,
+                                                    theta=theta,
                                                     lambd=self.lambd,
-                                                    gamma=self.gamma,
+                                                    gamma=gamma,
                                                     psi=self.psi,
                                                     ktype=CV_64F)
                     filter = []

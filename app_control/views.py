@@ -89,26 +89,26 @@ def start_train(request):
 def full_plan(request):
     try:
         item = 1
-        for split_cases in [True, False]:
+        for split_cases in ['True', 'False']:
             for dropout in [0.25, 0.5]:
                 for activation_function in ['softmax', 'sigmoid']:
-                    for img_size in [(50, 50), (75, 75), (100, 100), (150, 150), (200, 200)]:
-                        for sigma in [2, 3, 4, 5, 6]:
-                            for theta in [0.3, 45, 90, 135]:
-                                for lammbd in [8, 10, 12]:
-                                    for gamma in [0.3, 0.5, 0.7, 0.9]:
-                                        for psi in [0, 30, 60, 90]:
-                                            for nb_filters in [32, 64]:
-                                                for kernel_size in [5, 6, 7, 8, 9, 10]:
-                                                    for pool_size in [2, 4, 6, 8]:
-                                                        for batch_size in [32, 64, 128]:
+                    for img_size in [(75, 75), (50, 50)]:
+                        for nb_filters in [32, 64]:
+                            for kernel_size in [5, 6, 7, 8, 9, 10]:
+                                for pool_size in [2, 4, 6, 8]:
+                                    for batch_size in [32, 64, 128]:
+                                        for sigma in [180, 90, 30]:
+                                            for theta in [45, 90, 135]:
+                                                for lammbd in [45, 90, 135]:
+                                                    for gamma in [0.3, 0.5, 0.7, 0.9]:
+                                                        for psi in [0.2, 0.5, 0.8]:
                                                             try:
-                                                                item_path = os.path.join(ROOT_DIR,'cnn_models','item %s.json' % item)
+                                                                item_path = os.path.join(ROOT_DIR,'cnn_models','item%s.json' % item)
                                                                 if os.path.exists(item_path):
                                                                     item += 1
                                                                     break
                                                                 params = {}
-                                                                params['model_name'] = "item %s" % item
+                                                                params['model_name'] = "item%s" % item
                                                                 item += 1
                                                                 params['split_cases'] = split_cases
                                                                 params['img_rows'] = img_size[0]
@@ -126,7 +126,7 @@ def full_plan(request):
                                                                 params['psi'] = psi
 
                                                                 cnn = CNN(params)
-                                                                cnn.train_model(3)
+                                                                cnn.train_model(150)
                                                             except Exception as e:
                                                                 print e
     except Exception as e:
