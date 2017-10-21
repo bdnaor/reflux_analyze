@@ -6,8 +6,8 @@
         <script type="text/javascript" src="static/index.js"></script>
         <script src="static/js/vue.js"></script>
         <script src="static/js/plotly-latest.min.js"></script>
-        <script type="text/javascript" src="static/js/tablesorter/jquery-latest.js"></script>
-        <script type="text/javascript" src="static/js/tablesorter/jquery.tablesorter.js"></script>
+        <!--<script type="text/javascript" src="static/js/tablesorter/jquery-latest.js"></script>-->
+        <script type="text/javascript" src="static/js/tablesorter/jquery.tablesorter.js"></script               >
         <title>Reflux Analyzer</title>
 	</head>
 	<body>
@@ -204,7 +204,8 @@
                             <template>
                                 <button @click="predictRandom">predict random image</button></br>
                                 <center>
-                                    <img id="predict_random" src="" style="width: 75px;height: 75px;border: 1px"></br>
+                                    <!--v-if="Object.keys(L_Out).length > 0"-->
+                                    <img id="predict_random" style="width: 75px;height: 75px;border: 1px"></br>
                                     <label id="real_value">Real Value: </label></br>
                                     <label id="predict_value">Prediction: </label></br>
                                     <template v-for="layer in Object.keys(L_Out)">

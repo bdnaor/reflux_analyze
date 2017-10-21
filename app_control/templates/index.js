@@ -90,6 +90,13 @@ window.onload = function (){
                 if(value != 'model_predict'){
                     this.reset();
                 }
+            },
+            selected_model: function(value){
+                this.selected_model = value;
+                this.L_Out = {};
+                if ($('#predict_random')[0] != undefined){
+                    $('#predict_random')[0].src = '';
+                }
             }
         },
         methods:{

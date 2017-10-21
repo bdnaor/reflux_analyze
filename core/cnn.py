@@ -23,10 +23,15 @@ from PIL import Image
 import StringIO
 import base64
 from scipy.misc import toimage
+
+from core.data_set_manager import DataSetManager
 from manage import ROOT_DIR
-from utils.prepare_dataset import reshape_images
+
 
 FORMAT = '%Y-%m-%d %H:%M:%S'
+
+
+data_set_manager = DataSetManager()
 
 
 def calculate_score(_confusion_matrix):
@@ -112,155 +117,30 @@ class CNN(object):
                     self.with_gabor = True
 
             self._build_model()
-
-    def load_data_set_split_cases(self):
-        # the data set after resize
-        self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(
-            self.img_cols) + '_adaptation')
-
-        # create adaption dataset if not exist
-        if not os.path.exists(self.adaptation_dataset):
-            reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
-        # global nb_classes, X_train, X_test, y_train, y_test
-        # get the categories according to the folder
-        self.category = os.listdir(self.adaptation_dataset)
-        # create matrix to store all images flatten
-        train_img_matrix = []
-        train_label = []
-        test_img_matrix = []
-        test_label = []
-        for idx, category in enumerate(self.category):
-            category_path = os.path.join(self.adaptation_dataset, category)
-            case_folder = os.listdir(category_path)
-            for sub_folder in case_folder[int(len(case_folder)*self.train_ratio):]:
-                case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
-                images = os.listdir(case_folder_path)
-                for im in images:
-                    im_path = os.path.join(case_folder_path, im)
-                    test_img_matrix.append(np.array(Image.open(im_path)).transpose(2, 0, 1))
-                    test_label.append(idx)
-            for sub_folder in case_folder[0:int(len(case_folder)*self.train_ratio)]:
-                case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
-                images = os.listdir(case_folder_path)
-                for im in images:
-                    im_path = os.path.join(case_folder_path, im)
-                    train_img_matrix.append(np.array(Image.open(im_path)).transpose(2, 0, 1))
-                    train_label.append(idx)
-
-        train_img_matrix = np.array(train_img_matrix)
-        train_label = np.array(train_label)
-        test_img_matrix = np.array(test_img_matrix)
-        test_label = np.array(test_label)
-
-        del images
-        gc.collect()
-        # random_state for psudo random
-        # the data set load, shuffled and split between train and validation sets
-        train_img_matrix, train_label = shuffle(train_img_matrix, train_label, random_state=7)
-        test_img_matrix, test_label = shuffle(test_img_matrix, test_label, random_state=7)
-
-        self.X_train = train_img_matrix
-        self.y_train = train_label
-        self.X_test = test_img_matrix
-        self.y_test = test_label
-
-        # reshape the data
-        # self.X_train = self.X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
-        # self.X_test = self.X_test.reshape(self.X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
-
-        self.X_train = self.X_train.astype('float32')
-        self.X_test = self.X_test.astype('float32')
-
-        # help for faster convert
-        self.X_train /= 255
-        self.X_test /= 255
-
-        # convert class vectore to binary class matrices
-        self.y_train = np_utils.to_categorical(self.y_train, len(self.category))
-        self.y_test = np_utils.to_categorical(self.y_test, len(self.category))
-
-    def load_data_set(self):
-        '''
-        this method initialize the (X_train,y_train)(X_val, y_val) where X is the data and y is the label
-        :return:
-        '''
-        # the data set after resize
-        self.adaptation_dataset = os.path.join(ROOT_DIR, self.input_dataset_path + '_' + str(self.img_rows) + 'X' + str(self.img_cols) + '_adaptation')
-
-        # create adaption dataset if not exist
-        if not os.path.exists(self.adaptation_dataset):
-            reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
-        # global nb_classes, X_train, X_test, y_train, y_test
-        # get the categories according to the folder
-        self.category = os.listdir(self.adaptation_dataset)
-        # create matrix to store all images flatten
-        img_matrix = []
-        label = []
-        for idx, category in enumerate(self.category):
-            category_path = os.path.join(self.adaptation_dataset, category)
-            sub_folders = os.listdir(category_path)
-            for sub_folder in sub_folders:
-                case_folder_path = os.path.join(self.adaptation_dataset, category, sub_folder)
-                images = os.listdir(case_folder_path)
-                for im in images:
-                    im_path = os.path.join(case_folder_path, im)
-                    img_matrix.append(np.array(np.array(Image.open(im_path)).flatten()))
-                    label.append(idx)
-
-        img_matrix = np.array(img_matrix)
-        label = np.array(label)
-
-        del images
-        gc.collect()
-
-        # random_state for psudo random
-        # the data set load, shuffled and split between train and validation sets
-        data, label = shuffle(img_matrix, label, random_state=7)  # random_state=2
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, label, test_size=1-self.train_ratio, random_state=7)
-
-        # reshape the data
-        self.X_train = self.X_train.reshape(self.X_train.shape[0], self.nb_channel, self.img_rows, self.img_cols)
-        self.X_test = self.X_test.reshape(self.X_test.shape[0], self.nb_channel, self.img_rows, self.img_cols)
-
-        self.X_train = self.X_train.astype('float32')
-        self.X_test = self.X_test.astype('float32')
-
-        # help for faster convert
-        self.X_train /= 255
-        self.X_test /= 255
-
-        # convert class vector to binary class matrices
-        self.y_train = np_utils.to_categorical(self.y_train, len(self.category))
-        self.y_test = np_utils.to_categorical(self.y_test, len(self.category))
+        # self.load_datasets()
 
     def get_custom_gabor(self):
         def custom_gabor(shape, dtype=None):
             total_ker = []
-            # for i in xrange(shape[0]):
-            for theta in np.arange(0, np.pi, np.pi / shape[0]):
+            for t in np.arange(0, np.pi, np.pi /shape[3]):
                 kernels = []
-                # for j in xrange(shape[1]):
-                for gamma in np.arange(0.02, 0.9, 0.9 / shape[1]):
-                    # sigma=1, theta=1, lambd=0.5, gamma=0.3, psi=(3.14) * 0.5 = 1.57,
-                    tmp_filter = cv2.getGaborKernel(ksize=(shape[3], shape[2]),
+                for z in np.arange(0, np.pi, np.pi /shape[2]):
+                    tmp_filter = cv2.getGaborKernel(ksize=(shape[0], shape[1]),
                                                     sigma=self.sigma,
-                                                    theta=theta,
+                                                    theta=self.theta + t,
                                                     lambd=self.lambd,
-                                                    gamma=gamma,
+                                                    gamma=self.gamma + z,
                                                     psi=self.psi,
                                                     ktype=CV_64F)
-                    filter = []
-                    for i in xrange(len(tmp_filter)):
-                        if i == shape[2]:
-                            break
-                        row = tmp_filter[i]
-                        filter.append(np.delete(row, -1))
-                    # for row in tmp_filter:
-                    #     filter.append(np.delete(row, -1))
-                    kernels.append(filter)
-                    # gk.real
+                    _filter = []
+                    if shape[0]%2 == 0:
+                        for i in xrange(len(tmp_filter)-1):
+                            _filter.append(tmp_filter[i][0: shape[1]])
+                    else:
+                        _filter = tmp_filter
+                    kernels.append(_filter)
                 total_ker.append(kernels)
-            np_tot = shared(np.array(total_ker))
+            np_tot = shared(np.array(total_ker).reshape(shape))
             return K.variable(np_tot, dtype=dtype)
         return custom_gabor
 
@@ -308,7 +188,6 @@ class CNN(object):
             avg_scores.append((train_score+test_score)/2)
         return avg_scores
 
-    # from keras import backend as K
     def get_activations(self, frame_path):
         frame = np.array(Image.open(frame_path)).transpose(2, 0, 1)
         y = [1]
@@ -351,45 +230,35 @@ class CNN(object):
             print '\nsave json only'
             self.save(only_json=True)
 
-    def _calculate_confusion_matrix(self, epoch=None, logs=None):
-        try:
-            # For test set
-            if len(self.times_start_test) < 3:
-                self.times_start_test.append(datetime.now().strftime(FORMAT))
-            y_pred = self.model.predict_classes(self.X_test)
-            tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_test, axis=1), y_pred).ravel()
-            print "\nval: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
-            self.con_mat_val.append([tn, fp, fn, tp])
-
-            # For train set
-            if len(self.times_start_train) < 3:
-                self.times_start_train.append(datetime.now().strftime(FORMAT))
-            y_pred = self.model.predict_classes(self.X_train)
-            tn, fp, fn, tp = confusion_matrix(np.argmax(self.y_train, axis=1), y_pred).ravel()
-            print "\ntrain: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
-            self.con_mat_train.append([tn, fp, fn, tp])
-
-            if len(self.times_finish) < 3:
-                self.times_finish.append(datetime.now().strftime(FORMAT))
-            self.done_train_epoch += 1
-        except Exception as e:
-            print traceback.format_exc()
-
-    def load_datasets(self):
-        print '\nstart load'
-        if not hasattr(self, 'X_train') or self.X_train is None:
-            if self.split_cases:
-                self.load_data_set_split_cases()
-                # self.load_data_set()
-            else:
-                self.load_data_set()
-        print '\nfinish load'
-
     def train_model(self, n_epoch=None):
-        '''
-            saves the model weights after each epoch if the validation loss decreased
-        '''
-        self.load_datasets()
+        if self.split_cases:
+            X_train, X_test, y_train, y_test = data_set_manager.get_data_set_split_cases(self.img_rows, self.img_cols, self.train_ratio)
+        else:
+            X_train, X_test, y_train, y_test = data_set_manager.get_data_set_split_frames(self.img_rows, self.img_cols, self.train_ratio)
+
+        def _calculate_confusion_matrix(epoch=None, logs=None):
+            try:
+                # For test set
+                if len(self.times_start_test) < 3:
+                    self.times_start_test.append(datetime.now().strftime(FORMAT))
+                y_pred = self.model.predict_classes(X_test)
+                tn, fp, fn, tp = confusion_matrix(np.argmax(y_test, axis=1), y_pred).ravel()
+                print "\nval: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
+                self.con_mat_val.append([tn, fp, fn, tp])
+
+                # For train set
+                if len(self.times_start_train) < 3:
+                    self.times_start_train.append(datetime.now().strftime(FORMAT))
+                y_pred = self.model.predict_classes(X_train)
+                tn, fp, fn, tp = confusion_matrix(np.argmax(y_train, axis=1), y_pred).ravel()
+                print "\ntrain: tn:%s, fp:%s, fn:%s, tp:%s" % (tn, fp, fn, tp)
+                self.con_mat_train.append([tn, fp, fn, tp])
+
+                if len(self.times_finish) < 3:
+                    self.times_finish.append(datetime.now().strftime(FORMAT))
+                self.done_train_epoch += 1
+            except Exception as e:
+                print traceback.format_exc()
 
         # Initialize params for progress bar
         self.done_train_epoch = 0
@@ -397,18 +266,19 @@ class CNN(object):
 
         # Evaluate the created model at the first time only
         if not self.con_mat_val:
-            self._calculate_confusion_matrix()
+            _calculate_confusion_matrix()
             self._save_only_best()
 
         # Start train the model
-        conf_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: self._calculate_confusion_matrix(epoch, logs))
+        conf_matrix = LambdaCallback(on_epoch_end=lambda epoch, logs: _calculate_confusion_matrix(epoch, logs))
         save_only_best = LambdaCallback(on_epoch_end=lambda epoch, logs: self._save_only_best(epoch, logs))
-        self.hist = self.model.fit(self.X_train,
-                                   self.y_train,
+
+        self.hist = self.model.fit(X_train,
+                                   y_train,
                                    batch_size=self.batch_size,
                                    epochs=n_epoch,
                                    verbose=1,
-                                   validation_data=(self.X_test, self.y_test),
+                                   validation_data=(X_test, y_test),
                                    callbacks=[conf_matrix, save_only_best])
 
     def save(self, only_json=False):
@@ -502,17 +372,18 @@ class CNN(object):
         }
 
     def get_random_frame(self):
-        if not hasattr(self, 'adaptation_dataset'):
-            self.load_datasets()
-        categories = os.listdir(self.adaptation_dataset)
-        category = randint(0, len(self.category)-1)
-        category_path = os.path.join(self.adaptation_dataset, categories[category])
+        # if not hasattr(self, 'adaptation_dataset'):
+        #     self.load_datasets()
+        categories = data_set_manager.get_categories(self.img_rows, self.img_cols)
+        adaptation_dataset = data_set_manager.get_adaptation_dataset(self.img_rows, self.img_cols)
+        category = randint(0, len(categories)-1)
+        category_path = os.path.join(adaptation_dataset, categories[category])
         cases = os.listdir(category_path)
         case_index = randint(0, len(cases)-1)
         frames = os.listdir(os.path.join(category_path, cases[case_index]))
         frame_index = randint(0, len(frames)-1)
         random_frame = os.path.join(category_path, cases[case_index], frames[frame_index])
-        return random_frame, self.category[category]
+        return random_frame, categories[category]
 
     def get_random_prediction(self):
         random_frame, real = self.get_random_frame()
