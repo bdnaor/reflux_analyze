@@ -29,6 +29,18 @@
             1447,
             866,
             16156
+        ],
+        [
+            15017,
+            608,
+            1483,
+            15539
+        ],
+        [
+            14926,
+            699,
+            692,
+            16330
         ]
     ],
     "con_mat_val": [
@@ -55,15 +67,27 @@
             1250,
             901,
             10490
+        ],
+        [
+            9677,
+            698,
+            1504,
+            9887
+        ],
+        [
+            9448,
+            927,
+            932,
+            10459
         ]
     ],
-    "done_train_epoch": 4,
+    "done_train_epoch": 2,
     "dropout": 0.25,
     "gamma": 0.5,
     "hist": null,
     "img_cols": 75,
     "img_rows": 75,
-    "index_best": 3,
+    "index_best": 5,
     "kernel_size": [
         3,
         3
@@ -95,7 +119,7 @@
         "2017-10-21 15:57:50",
         "2017-10-21 16:05:47"
     ],
-    "total_train_epoch": 15,
+    "total_train_epoch": 10,
     "train_ratio": 0.6,
     "with_gabor": true
 }
