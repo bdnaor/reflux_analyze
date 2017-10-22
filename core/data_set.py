@@ -29,17 +29,17 @@ class DataSet(object):
     def __init__(self, img_rows, img_cols):
         self.img_rows = img_rows
         self.img_cols = img_cols
+        # create adaption data set if not exist
+        if not os.path.exists(self.adaptation_dataset):
+            print '\nStart create adaptation data set %sX%s' % (self.img_rows, self.img_cols)
+            input_dataset_path = os.path.join(ROOT_DIR, 'dataset')
+            reshape_images(input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
+            print '\nFinish create adaptation data set %sX%s' % (self.img_rows, self.img_cols)
         self.categories = os.listdir(self.adaptation_dataset)
         self.data = None
 
     def _load(self):
         if self.data is None:
-            # create adaption data set if not exist
-            if not os.path.exists(self.adaptation_dataset):
-                print '\nStart create adaptation data set %sX%s' % (self.img_rows, self.img_cols)
-                reshape_images(self.input_dataset_path, self.adaptation_dataset, self.img_rows, self.img_cols)
-                print '\nFinish create adaptation data set %sX%s' % (self.img_rows, self.img_cols)
-
             print '\nStart load'
             self.data = {}
             for idx, category in enumerate(self.categories):
